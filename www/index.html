@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fraquilt</title>
+</head>
+<body>
+    <main>
+        <button onClick="generateImage()">Generate</button>
+        <input type="number" id="iter" value="10">
+        <input type="color" id="c0" value="#FFFFFF">
+        <input type="color" id="c1" value="#FFFFFF">
+        <input type="color" id="c2" value="#FFFFFF">
+        <input type="color" id="c3" value="#FFFFFF">
+        <img src="" width="600" height="600" style="image-rendering: pixelated; image-rendering: -moz-crisp-edges;" id="generate">
+        <div class = "funccols" style="visibility: hidden">
+            <div class = "funcrows">
+                <div class="colors">
+                    <div class="components">
+                        <input type="text" class="function">
+                        <input type="text" class="function">
+                        <input type="text" class="function">
+                    <div class="components">
+                    <div class="components">
+                        <input type="text" class="function">
+                        <input type="text" class="function">
+                        <input type="text" class="function">
+                    <div class="components">
+                    <div class="components">
+                        <input type="text" class="function">
+                        <input type="text" class="function">
+                        <input type="text" class="function">
+                    <div class="components">
+                    <div class="components">
+                        <input type="text" class="function">
+                        <input type="text" class="function">
+                        <input type="text" class="function">
+                    <div class="components">
+                </div>
+                <div class="colors">
+                    <div class="components">
+                        <input type="text" class="function">
+                        <input type="text" class="function">
+                        <input type="text" class="function">
+                    <div class="components">
+                    <div class="components">
+                        <input type="text" class="function">
+                        <input type="text" class="function">
+                        <input type="text" class="function">
+                    <div class="components">
+                    <div class="components">
+                        <input type="text" class="function">
+                        <input type="text" class="function">
+                        <input type="text" class="function">
+                    <div class="components">
+                    <div class="components">
+                        <input type="text" class="function">
+                        <input type="text" class="function">
+                        <input type="text" class="function">
+                    <div class="components">
+                </div>
+            </div>
+            <div class = "funcrows">
+                <div class="colors">
+                    <div class="components">
+                        <input type="text" class="function">
+                        <input type="text" class="function">
+                        <input type="text" class="function">
+                    <div class="components">
+                    <div class="components">
+                        <input type="text" class="function">
+                        <input type="text" class="function">
+                        <input type="text" class="function">
+                    <div class="components">
+                    <div class="components">
+                        <input type="text" class="function">
+                        <input type="text" class="function">
+                        <input type="text" class="function">
+                    <div class="components">
+                    <div class="components">
+                        <input type="text" class="function">
+                        <input type="text" class="function">
+                        <input type="text" class="function">
+                    <div class="components">
+                </div>
+                <div class="colors">
+                    <div class="components">
+                        <input type="text" class="function">
+                        <input type="text" class="function">
+                        <input type="text" class="function">
+                    <div class="components">
+                    <div class="components">
+                        <input type="text" class="function">
+                        <input type="text" class="function">
+                        <input type="text" class="function">
+                    <div class="components">
+                    <div class="components">
+                        <input type="text" class="function">
+                        <input type="text" class="function">
+                        <input type="text" class="function">
+                    <div class="components">
+                    <div class="components">
+                        <input type="text" class="function">
+                        <input type="text" class="function">
+                        <input type="text" class="function">
+                    <div class="components">
+                </div>
+            </div>
+        </div>
+        
+    </main>
+    <script>
+        function hexToRGB(hex) {
+            var bigint = parseInt(hex.slice(1), 16);
+            var r = (bigint >> 16) & 255;
+            var g = (bigint >> 8) & 255;
+            var b = bigint & 255;
+
+            return [r,g,b];
+        }
+
+
+/*
+        function randVal(numcols, likelynum){
+            let n = Math.random();
+            if(n < 0.1){
+                return (Math.floor(Math.random() * 255)).toString(10)
+            }
+            else if(n < likelynum){
+                return (Math.floor(Math.random() * 3) + 1).toString(10)
+            }
+            else{
+                let c = Math.floor(Math.random() * 3)
+                let i = Math.floor(Math.random() * numcols);
+                if(c == 0){
+                    return "r" + i.toString(10)
+                }
+                else if(c == 1){
+                    return "g" + i.toString(10)
+                }
+                else {
+                    return "b" + i.toString(10)
+                }
+            } 
+        }*/
+
+        function randVal(numcols, likelynum){
+            let n = Math.random();
+            if(n < 0){
+                return (Math.floor(Math.random() * 255)).toString(10)
+            }
+            else{
+                let c = Math.floor(Math.random() * 3)
+                let i = Math.floor(Math.random() * numcols);
+                if(c == 0){
+                    return "r" + i.toString(10)
+                }
+                else if(c == 1){
+                    return "g" + i.toString(10)
+                }
+                else {
+                    return "b" + i.toString(10)
+                }
+            }
+        } 
+
+        function randOp(){
+            /*
+            let o = Math.random()
+            if(o < 0.1){
+                return "-";
+            }
+            else if(o < 0.4){
+                return "+";
+            }
+            else if(o < 0.7){
+                return "/"
+            }
+            else{
+                return "*"
+            }*/
+            
+            let o = Math.floor(Math.random() * 4);
+            switch(o){
+                case 0:
+                    return "+";
+                case 1:
+                    return "-";
+                case 2:
+                    return "*";
+                case 3:
+                    return "/";
+            }
+        }
+
+        function randFuncs(numcols, width,height){
+            let res = []
+            for(let w=0; w < width; w++){
+                let warr = []
+                for(let h=0; h < height; h++){
+                    let harr = []
+                    for(let color=0; color < numcols; color++){
+                        let colarr = []
+                        for(let comp=0; comp < 3; comp++){
+
+                            if(Math.random() < 0.5){
+                                colarr.push(randVal(numcols, 0.2) + randOp() + randVal(numcols, 0.6))
+                            }
+                            else{
+                                colarr.push(randVal(numcols, 0.1));
+                            }
+                            
+                        }
+                        harr.push(colarr)
+                    }
+                    warr.push(harr)
+                }
+                res.push(warr)
+            }
+            return res
+        }
+
+        function randColors(numcolors){
+            let cols = []
+            for(let i=0; i < numcolors; i++){
+                let r = Math.floor(Math.random() * 256);
+                let g = Math.floor(Math.random() * 256);
+                let b = Math.floor(Math.random() * 256);
+                cols.push([r,g,b]);
+            }
+            return cols;
+        }
+
+        function generateImage(){
+            let numcols = 6;
+            let randc = randColors(numcols);
+            let randf = randFuncs(numcols, 2, 2);
+            const data = {
+                "iterations" : parseInt(iter.value),
+                "colors" : randc,
+                "functions": randf
+            }
+
+            const url = '/api'
+            const req = {
+                method: 'POST',
+                headers : {'Content-Type' : 'application/json'},
+                body: JSON.stringify(data)
+             }
+
+            fetch(url, req)
+                .then(res => res.json())
+                .then(getImage)
+        }
+
+        function getImage(data){
+            fetch(data.url, {method: 'HEAD'})
+                .then(r => {
+                    if(r.status == 202){
+                        setTimeout(() => getImage(data), 500);
+                    }
+                    else if(r.status == 200){
+                        generate.setAttribute('src', data.url)
+                    }
+                    else{
+                        console.error(r.status)
+                    }
+            })
+        }
+    </script>
+</body>
+</html>

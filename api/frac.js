@@ -1,4 +1,5 @@
-var Jimp = require('jimp');
+const Jimp = require('jimp');
+const {workerData, isMainThread} = require('worker_threads');
 
 const RED = 0;
 const GREEN = 1;
@@ -44,16 +45,24 @@ function parseOp(funcString){
     switch(funcString[0]){
         case '+':
             var val = parseVal(funcString.slice(1));
-            return (cols, x) => {return x + val(cols)};
+            return (cols, x) =>  x + val(cols);
         case '-':
             var val = parseVal(funcString.slice(1));
-            return (cols, x) => {return x - val(cols)};
+            return (cols, x) => x - val(cols);
         case '/':
             var val = parseVal(funcString.slice(1));
-            return (cols, x) => {return x / val(cols)};
+            return (cols, x) => {
+                let v = val(cols);
+                if(v == 0){
+                    return x;
+                }
+                else{
+                    return x / v;
+                }
+            };
         case '*':
             var val = parseVal(funcString.slice(1)); 
-            return (cols, x) => {return x * val(cols)};
+            return (cols, x) => x * val(cols);
         case ' ':
             return parseOp(funcString.slice(1));
         default:
@@ -66,7 +75,7 @@ function parseVal(funcString){
         throw new Error('Expected and did not find a value while parsing');
     }
     if(funcString.length == 1){
-        return cols => {return parseInt(funcString)};
+        return cols => parseInt(funcString);
     }
     switch(funcString[0]){
         case 'r':
@@ -75,21 +84,21 @@ function parseVal(funcString){
                 throw new Error('Expected and did not find a number while parsing');
             }
             var rest = parseOp(funcString.slice(2));
-            return cols => { return rest(cols, cols[num][RED])};
+            return cols => rest(cols, cols[num][RED]);
         case 'g':
             var num = parseInt(funcString[1]);
             if(isNaN(num)){
                 throw new Error('Expected and did not find a number while parsing');
             }
             var rest = parseOp(funcString.slice(2));
-            return cols => {return rest(cols, cols[num][GREEN])};
+            return cols => rest(cols, cols[num][GREEN]);
         case 'b':
             var num = parseInt(funcString[1]);
             if(isNaN(num)){
                 throw new Error('Expected and did not find a number while parsing');
             }
             var rest = parseOp(funcString.slice(2));
-            return cols => {return rest(cols, cols[num][BLUE])};
+            return cols => rest(cols, cols[num][BLUE]);
         case ' ':
             return parseVal(funcString.slice(1));
         default:
@@ -104,7 +113,7 @@ function parseVal(funcString){
                 i++;
             }
             var rest = parseOp(funcString.slice(i));
-            return cols => {return rest(cols, num);};
+            return cols => rest(cols, num);
     }
 }
 
@@ -115,7 +124,7 @@ function parseColorFunction(func){
     var gfunc = parseVal(func[GREEN]);
     var bfunc = parseVal(func[BLUE]);
 
-    return cols => {return [rfunc(cols), gfunc(cols), bfunc(cols)]};
+    return cols => [rfunc(cols), gfunc(cols), bfunc(cols)];
 }
 
 function parseFunction(funcs){
@@ -125,7 +134,7 @@ function parseFunction(funcs){
     for(var c=0; c < funcs.length; c++){
         colorfuncs.push(parseColorFunction(funcs[c]));
     }
-    return cols => {return colorfuncs.map(x => x(cols));};
+    return cols => colorfuncs.map(x => x(cols));
 }
 
 function parseAllFunctions(funcs){
@@ -141,26 +150,7 @@ function parseAllFunctions(funcs){
     return fs;
 }
 
-
-
 function runFractal(options){
-    /*
-    var iter = 10;
-
-    var forestfuncs = [[[["r2" , "g1", "b0 * 2"], ["r2 - 20", "g2", "b2" ], ["r3", "g3 * 2", "b3 * 2"], ["r1 / 2", "g1 / 2", "b1 / 2"]],
-                        [["b0 / 2", "b1", "b3"], ["r3 / 3", "g3 / 3", "b3 / 3"],["r2", "g2", "b2 "], ["r0"," g0", "b0"]]],
-                        [[["g1", "b3 / 2"," r0 * 2"], ["r0 * 2", "g0 * 2"," b0"], ["r1 / 3", "g1", "b1"], ["r3", "g3", "b3"]],
-                        [["g1", "b3 / 2"," r0 * 2"], ["r0 * 2", "g0 * 2"," b0"], ["r1 / 3", "g1", "b1"], ["r3", "g3", "b3"]]]];
-
-    
-    var fs = [[cols => {return cols.map( col => {return [col[0] / 2, col[1], col[2]];})},
-                cols => {return cols.map( col => {return [col[0] / 2, col[1], col[2]];})},
-                 cols => {return cols.map( col => {return [col[0], col[1], col[2]];})}],
-            [cols => {return cols.map( col => {return [col[0], col[1] /2, col[2]];})},
-            cols => {return cols.map( col => {return [col[0] / 2, col[1], col[2]];})},
-                cols => {return cols.map( col => {return [col[0], col[1], col[2]/2];})}]];
-*/
-
     var funcs = parseAllFunctions(options.functions);
 
     var width = Math.pow(funcs.length, options.iterations);
@@ -169,10 +159,15 @@ function runFractal(options){
     var fractal = new Jimp(width, height, '#FFFFFF');
     
     frac(fractal, options.iterations, 0, 0, options.colors, funcs);   
-    fractal.write('images/' + options.name + '.png');
+    fractal.write(`${__dirname}/../www/images/${options.name}.png`);
 }
 
-exports.runFractal = runFractal;
+if(!isMainThread){
+    runFractal(workerData);
+}
+
+
+//exports.runFractal = runFractal;
 
 
 
