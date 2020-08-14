@@ -7,105 +7,13 @@
     <main>
         <button onClick="generateImage()">Generate</button>
         <input type="number" id="iter" value="10">
+        <input type="number" id="width" value="2">
+        <input type="number" id="colors" value="1">
         <input type="color" id="c0" value="#FFFFFF">
         <input type="color" id="c1" value="#FFFFFF">
         <input type="color" id="c2" value="#FFFFFF">
         <input type="color" id="c3" value="#FFFFFF">
         <img src="" width="600" height="600" style="image-rendering: pixelated; image-rendering: -moz-crisp-edges;" id="generate">
-        <div class = "funccols" style="visibility: hidden">
-            <div class = "funcrows">
-                <div class="colors">
-                    <div class="components">
-                        <input type="text" class="function">
-                        <input type="text" class="function">
-                        <input type="text" class="function">
-                    <div class="components">
-                    <div class="components">
-                        <input type="text" class="function">
-                        <input type="text" class="function">
-                        <input type="text" class="function">
-                    <div class="components">
-                    <div class="components">
-                        <input type="text" class="function">
-                        <input type="text" class="function">
-                        <input type="text" class="function">
-                    <div class="components">
-                    <div class="components">
-                        <input type="text" class="function">
-                        <input type="text" class="function">
-                        <input type="text" class="function">
-                    <div class="components">
-                </div>
-                <div class="colors">
-                    <div class="components">
-                        <input type="text" class="function">
-                        <input type="text" class="function">
-                        <input type="text" class="function">
-                    <div class="components">
-                    <div class="components">
-                        <input type="text" class="function">
-                        <input type="text" class="function">
-                        <input type="text" class="function">
-                    <div class="components">
-                    <div class="components">
-                        <input type="text" class="function">
-                        <input type="text" class="function">
-                        <input type="text" class="function">
-                    <div class="components">
-                    <div class="components">
-                        <input type="text" class="function">
-                        <input type="text" class="function">
-                        <input type="text" class="function">
-                    <div class="components">
-                </div>
-            </div>
-            <div class = "funcrows">
-                <div class="colors">
-                    <div class="components">
-                        <input type="text" class="function">
-                        <input type="text" class="function">
-                        <input type="text" class="function">
-                    <div class="components">
-                    <div class="components">
-                        <input type="text" class="function">
-                        <input type="text" class="function">
-                        <input type="text" class="function">
-                    <div class="components">
-                    <div class="components">
-                        <input type="text" class="function">
-                        <input type="text" class="function">
-                        <input type="text" class="function">
-                    <div class="components">
-                    <div class="components">
-                        <input type="text" class="function">
-                        <input type="text" class="function">
-                        <input type="text" class="function">
-                    <div class="components">
-                </div>
-                <div class="colors">
-                    <div class="components">
-                        <input type="text" class="function">
-                        <input type="text" class="function">
-                        <input type="text" class="function">
-                    <div class="components">
-                    <div class="components">
-                        <input type="text" class="function">
-                        <input type="text" class="function">
-                        <input type="text" class="function">
-                    <div class="components">
-                    <div class="components">
-                        <input type="text" class="function">
-                        <input type="text" class="function">
-                        <input type="text" class="function">
-                    <div class="components">
-                    <div class="components">
-                        <input type="text" class="function">
-                        <input type="text" class="function">
-                        <input type="text" class="function">
-                    <div class="components">
-                </div>
-            </div>
-        </div>
         
     </main>
     <script>
@@ -143,10 +51,10 @@
             } 
         }*/
 
-        function randVal(numcols, likelynum){
+        function randVal(numcols, likelynum, numrange){
             let n = Math.random();
-            if(n < 0){
-                return (Math.floor(Math.random() * 255)).toString(10)
+            if(n < likelynum){
+                return (Math.floor(Math.random() * numrange)).toString(10)
             }
             else{
                 let c = Math.floor(Math.random() * 3)
@@ -192,7 +100,7 @@
             }
         }
 
-        function randFuncs(numcols, width,height){
+        function randFuncs(numcols, width,height, likely1, likely2, likely3, numrange){
             let res = []
             for(let w=0; w < width; w++){
                 let warr = []
@@ -202,13 +110,12 @@
                         let colarr = []
                         for(let comp=0; comp < 3; comp++){
 
-                            if(Math.random() < 0.5){
-                                colarr.push(randVal(numcols, 0.2) + randOp() + randVal(numcols, 0.6))
+                            if(Math.random() < likely1){
+                                colarr.push(randVal(numcols, likely2, numrange) + randOp() + randVal(numcols, likely3, numrange))
                             }
                             else{
-                                colarr.push(randVal(numcols, 0.1));
+                                colarr.push(randVal(numcols, 0, numrange));
                             }
-                            
                         }
                         harr.push(colarr)
                     }
@@ -231,9 +138,9 @@
         }
 
         function generateImage(){
-            let numcols = 6;
+            let numcols = parseInt(colors.value);
             let randc = randColors(numcols);
-            let randf = randFuncs(numcols, 2, 2);
+            let randf = randFuncs(numcols, parseInt(width.value), parseInt(width.value), Math.random(), Math.random()/2, Math.random()/2, Math.floor(Math.random() * 256));
             const data = {
                 "iterations" : parseInt(iter.value),
                 "colors" : randc,

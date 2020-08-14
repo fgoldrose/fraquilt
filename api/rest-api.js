@@ -16,7 +16,6 @@ router.post('/api', (req, res) => {
         //console.log('completed json file write');
     });
 
-
     const worker = new Worker(`${__dirname}/frac.js`,
     {
         workerData: options
