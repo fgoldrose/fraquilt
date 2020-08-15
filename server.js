@@ -3,7 +3,7 @@ const app = express();
 const bodyParser = require("body-parser");
 const restAPI = require("./api/rest-api.js")
 const fs = require("fs");
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 app.use(bodyParser.json());
 app.use(restAPI);
