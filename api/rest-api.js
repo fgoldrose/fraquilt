@@ -12,10 +12,12 @@ router.post('/api', (req, res) => {
     let options = req.body;
     options.name = name;
 
+    /*
     fs.writeFile(`${__dirname}/../www/images/${name}.json`, JSON.stringify(req.body), (err) => {
         if (err) throw err;
         //console.log('completed json file write');
     });
+    */
 
     let fractal = frac.runFractal(options);
     if(fractal == null){

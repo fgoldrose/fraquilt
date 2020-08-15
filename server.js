@@ -14,6 +14,7 @@ app.listen(port, (err)=> {
     console.log("Starting on port " + port);
 })
 
+/*
 app.get('/images/:id', (req, res) => {
         if(fs.existsSync('./www./images/' + req.params.id)){
             res.sendFile('./www./images/' + req.params.id)
@@ -23,3 +24,4 @@ app.get('/images/:id', (req, res) => {
             res.send('File being generated');
         }
     })
+*/
