@@ -199,11 +199,11 @@ function runFractal(options){
         let fractal = new Jimp(width, height, '#FFFFFF');
         
         frac(fractal, options.iterations, 0, 0, options.colors, funcs, funcs[0].length);   
-        fractal.write(`${__dirname}/../www/images/${options.name}.png`);
-        //fractal.getBase64(Jimp.MIME_PNG, (err, img) => {return img;});
+        //fractal.write(`${__dirname}/../www/images/${options.name}.png`);
+        return fractal;
     }
     catch(err){
-        console.log(err)
+        console.log(err);
     }
 }
 
