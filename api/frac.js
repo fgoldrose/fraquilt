@@ -192,7 +192,7 @@ function runFractal(options){
 
         let width = Math.pow(funcs.length, options.iterations);
         let height = Math.pow(funcs[0].length, options.iterations);
-        if(width > 7000 || height > 7000){
+        if(width > 4000 || height > 4000){
             throw new Error('Image too big');
         }
 
