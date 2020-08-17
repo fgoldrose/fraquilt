@@ -18,6 +18,8 @@
         
     </main>
     <script>
+        let imagedata;
+
         function hexToRGB(hex) {
             var bigint = parseInt(hex.slice(1), 16);
             var r = (bigint >> 16) & 255;
@@ -26,31 +28,6 @@
 
             return [r,g,b];
         }
-
-
-/*
-        function randVal(numcols, likelynum){
-            let n = Math.random();
-            if(n < 0.1){
-                return (Math.floor(Math.random() * 255)).toString(10)
-            }
-            else if(n < likelynum){
-                return (Math.floor(Math.random() * 3) + 1).toString(10)
-            }
-            else{
-                let c = Math.floor(Math.random() * 3)
-                let i = Math.floor(Math.random() * numcols);
-                if(c == 0){
-                    return "r" + i.toString(10)
-                }
-                else if(c == 1){
-                    return "g" + i.toString(10)
-                }
-                else {
-                    return "b" + i.toString(10)
-                }
-            } 
-        }*/
 
         function randVal(numcols, likelynum, numfrom, numto){
             let n = Math.random();
@@ -72,7 +49,7 @@
                 }
             }
 
-            if(Math.random() < 0.4){
+            if(Math.random() < 0.5){
                 ret += randOp(numcols);
             }
             return ret;
@@ -164,9 +141,7 @@
              fetch(url, req)
                 .then(res => {
                     if(res.status == 200){
-                         res.json().then(data => {
-                             generate.setAttribute('src', data.img)
-                        })         
+                         res.json().then(getImage)      
                     } 
                     else {
                         generate.setAttribute('src', "")
@@ -177,14 +152,11 @@
         function getImage(data){
             fetch(data.url, {method: 'HEAD'})
                 .then(r => {
-                    if(r.status == 202){
-                        setTimeout(() => getImage(data), 500);
-                    }
-                    else if(r.status == 200){
+                    if(r.status == 200){
                         generate.setAttribute('src', data.url)
                     }
-                    else{
-                        console.error(r.status)
+                    else {
+                        setTimeout(() => getImage(data), 500);
                     }
             })
         }

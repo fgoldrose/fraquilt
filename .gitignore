@@ -1,5 +1,6 @@
 .DS_STORE
 extra_images
+.env
 
 # Logs
 logs
