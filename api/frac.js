@@ -182,6 +182,9 @@ function runFractal(options){
         if(options.colors.length < 1){
             throw new Error('Must have at least one color');
         }
+        if(options.colors.length > 10){
+            throw new Error('Too many colors (exceeds 10)');
+        }
         options.colors.map(c => {
             if(c.length != 3){
                 throw new Error('Color array has length other than 3');
