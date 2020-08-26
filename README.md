@@ -5,13 +5,10 @@ Recursively generate images based on input colors and functions that manipulate 
 
 The index page uses the API to generate and display random image.
 
-Deployed at fraquilt.herokuapp.com
+Deployed at [fraquilt.herokuapp.com](fraquilt.herokuapp.com)
 
-<img src="https://fraquilt.s3.us-east-2.amazonaws.com/7e0a9971-73a0-48b5-886b-6b4019a2b81e.png" width="200">
-<img src="https://fraquilt.s3.us-east-2.amazonaws.com/222cb63b-b187-466d-be6c-dcff3bd8ad95.png" width="200">
-<img src="https://fraquilt.s3.us-east-2.amazonaws.com/1abe1da3-c068-4eaf-bf28-2781c6894b05.png" width="200">
-<img src="https://fraquilt.s3.us-east-2.amazonaws.com/04e86b42-5efa-44da-b599-f04ac6565164.png" width="200">
 
+<img src="https://fraquilt.s3.us-east-2.amazonaws.com/7e0a9971-73a0-48b5-886b-6b4019a2b81e.png" width="200" /> <img src="https://fraquilt.s3.us-east-2.amazonaws.com/222cb63b-b187-466d-be6c-dcff3bd8ad95.png" width="200" /> <img src="https://fraquilt.s3.us-east-2.amazonaws.com/1abe1da3-c068-4eaf-bf28-2781c6894b05.png" width="200" /> <img src="https://fraquilt.s3.us-east-2.amazonaws.com/04e86b42-5efa-44da-b599-f04ac6565164.png" width="200" />
 
 
 ## Generation
