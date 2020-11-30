@@ -125,7 +125,7 @@ function parseVal(funcString, numcolors){
             }
             let i = 1;
             while(funcString.length > i && !isNaN(parseInt(funcString[i], 10))){
-                num = num * 10 + parseInt(funcString[i], 10);
+                //num = num * 10 + parseInt(funcString[i], 10);
                 i++;
             }
             rest = parseOp(funcString.slice(i), numcolors);

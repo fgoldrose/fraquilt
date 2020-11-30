@@ -110,7 +110,7 @@
         }
 
         function generateImage(){
-            let numcols = parseInt(colors.value);
+            let numcols = parseInt(document.getElementById("colors").value, 10);
             let randc = randColors(numcols);
 
             /*
@@ -121,11 +121,11 @@
             console.log(rand1, rand2, rand3, randrange);
             */
 
-            let randf = randFuncs(numcols, parseInt(width.value), parseInt(width.value));
+            let randf = randFuncs(numcols, parseInt(document.getElementById("width").value, 10), parseInt(document.getElementById("width").value, 10));
 
 
             const data = {
-                "iterations" : parseInt(iter.value),
+                "iterations" : parseInt(document.getElementById("iter").value, 10),
                 "colors" : randc,
                 "functions": randf
             }
