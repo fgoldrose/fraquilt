@@ -13,6 +13,9 @@
         <label>Colors</label>
         <input type="number" id="colors" value="1" style="width:50px">
         <button onClick="generateImage()">Generate</button>
+        <label>Frames</label>
+        <input type="number" id="frames" value="20" style="width:50px">
+        <button onClick="generateGif()">Gif</button>
         <br>
         <img src="" width=600 heigh=600 style="image-rendering: pixelated; image-rendering: -moz-crisp-edges;" id="generate">
         
@@ -132,6 +135,50 @@
             console.log(JSON.stringify(data));
 
             const url = '/api'
+            const req = {
+                method: 'POST',
+                headers : {'Content-Type' : 'application/json'},
+                body: JSON.stringify(data)
+             }
+
+             fetch(url, req)
+                .then(res => {
+                    if(res.status == 200){
+                         res.json().then(getImage)      
+                    } 
+                    else {
+                        generate.setAttribute('src', "")
+                    }                   
+                })
+        }
+
+        function getImage(data){
+            fetch(data.url, {method: 'HEAD'})
+                .then(r => {
+                    if(r.status == 200){
+                        generate.setAttribute('src', data.url)
+                    }
+                    else {
+                        setTimeout(() => getImage(data), 500);
+                    }
+            })
+        }
+        function generateGif(){
+            let numcols = parseInt(document.getElementById("width").value, 10);
+            let randc = randColors(numcols);
+
+            let randf = randFuncs(numcols, parseInt(document.getElementById("width").value, 10), parseInt(document.getElementById("width").value, 10));
+
+            console.log(parseInt(document.getElementById("frames").value, 10));
+            const data = {
+                "iterations" : parseInt(document.getElementById("iter").value, 10),
+                "colors" : randc,
+                "functions": randf,
+                "numframes": parseInt(document.getElementById("frames").value, 10)
+            }
+            console.log(JSON.stringify(data));
+
+            const url = '/api/gif'
             const req = {
                 method: 'POST',
                 headers : {'Content-Type' : 'application/json'},

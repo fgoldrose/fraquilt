@@ -7,6 +7,8 @@ const {Worker, isMainThread, workerData} = require('worker_threads');
 const Jimp = require('jimp');
 const aws = require('aws-sdk');
 const S3_BUCKET = process.env.S3_BUCKET_NAME;
+const GIFEncoder = require('gifencoder')
+const { execFile } = require('child_process');
 
 aws.config.region='us-east-2';
 
@@ -73,6 +75,88 @@ router.post('/api', (req, res) => {
             }
         });
     }
+})
+
+
+function changeOptionsRandom(options){
+    let width = options.functions.length;
+    let height = options.functions[0].length;
+    let numcolors = options.colors.length;
+    let c = Math.floor(Math.random() * numcolors);
+    let comp = Math.floor(Math.random() * 3);
+
+    if(Math.random() < 0){
+        if (Math.random() < 0.5){
+            options.colors[c][comp] = options.colors[c][comp] + 1
+        }
+        else{
+            options.colors[c][comp] = options.colors[c][comp] - 1
+        }
+    }
+
+    let w = Math.floor(Math.random() * width);
+    let h = Math.floor(Math.random() * height);
+    
+    let addon;
+    let rand = Math.random();
+    let num = (Math.floor(Math.random() * 5) + 2)
+    //num = 2
+    if(Math.random() < .5){
+        addon = "*" + num.toString() + "/" + (num - 1).toString()
+    }
+    else {
+        addon = "/" + num + "*" + (num - 1).toString()
+    }
+/*
+    if(rand < 0.05){
+        addon = addon + "+1"
+    }
+    else if(rand > 0.95){
+        addon = addon + "-1"
+    }
+*/
+
+    /*
+    else if (rand > .25){
+        addon = "*" + num + "/10"//"*9/10"
+    }
+    else{
+        addon = "/" + num + "*10"//"*10/9"
+    }*/
+    options.functions[w][h][c][comp] = options.functions[w][h][c][comp] + addon;
+}
+
+router.post('/api/gif', (req, res) => {
+    const name = uuid();
+    let options = req.body;
+    options.name = name;
+    let width = Math.pow(options.functions.length, options.iterations);
+    let height = Math.pow(options.functions[0].length, options.iterations);
+    
+    const encoder = new GIFEncoder(width, height);
+    encoder.createReadStream().pipe(fs.createWriteStream(`${__dirname}/../www/images/${name}.gif`))
+    encoder.start();
+    encoder.setRepeat(0);
+    encoder.setDelay(120);
+    encoder.setQuality(10);
+
+    console.log(options);
+
+    let numframes = options.numframes || 20;
+
+    let fractaldata;
+
+    for(let i = 0; i < numframes; i++){
+        console.log(i)
+        changeOptionsRandom(options);
+        fractaldata = frac.runFractal(options);
+        encoder.addFrame(fractaldata);
+    }
+    console.log(name);
+
+    encoder.finish();
+    res.status(200);
+    res.json({'url': `${__dirname}/../www/images/${name}.gif`});
 })
 
 module.exports = router;
