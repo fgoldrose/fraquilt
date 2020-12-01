@@ -3,6 +3,7 @@ const router = express.Router();
 const fs = require("fs");
 const {v4 : uuid} = require('uuid');
 const frac = require('./frac');
+const fracb = require('./fracb');
 const {Worker, isMainThread, workerData} = require('worker_threads');
 const Jimp = require('jimp');
 const aws = require('aws-sdk');
@@ -77,6 +78,117 @@ router.post('/api', (req, res) => {
     }
 })
 
+
+router.post('/api/funcs', (req, res) => {
+    const name = uuid();
+    let options = req.body;
+    options.name = name;
+
+    let fractal = fracb.runFractal(options);
+    console.log("got fractal")
+    
+    if(fractal == null){
+        res.status(400);
+        res.send("Request failed");
+    }
+    else{
+        let width = Math.pow(options.functions.length, options.iterations);
+        let height = Math.pow(options.functions[0].length, options.iterations);
+
+            Jimp.read(`${__dirname}/../www/images/38af4618-54f5-4938-a377-535a1bf0f244.png`, (err, image) => {
+            if (err) throw err;
+
+            image.scan(0, 0, image.bitmap.width, image.bitmap.height, (x,y,idx) =>{
+                let pix = Jimp.intToRGBA(image.getPixelColor(x, y));
+                let col = fractal[y*width + x]([[pix.r, pix.g, pix.b]])[0];
+
+                image.bitmap.data[idx] = col[0];
+                image.bitmap.data[idx+1] = col[1];
+                image.bitmap.data[idx+2] = col[2];
+                image.bitmap.data[idx+3] = 255;
+
+                if (x == image.bitmap.width - 1 && y == image.bitmap.height - 1) {
+                    if(local){
+                        image.write(`${__dirname}/../www/images/${options.name}.png`);
+                        fs.writeFile(`${__dirname}/../www/images/${options.name}.json`, JSON.stringify(req.body), (err) => {
+                            if (err) throw err;
+                        });
+                        res.status(200);
+                        res.json({'url': `${__dirname}/../www/images/${options.name}.png`});
+                    }
+                    else{
+                        image.getBuffer(Jimp.MIME_PNG, (err, img) => {
+                        if (err) throw err;
+                        writeS3(options, img);
+                    })
+                    }
+                }
+            })
+        });
+    }
+})
+
+
+router.post('/api/funcsgif', (req, res) => {
+    const name = uuid();
+    let options = req.body;
+    options.name = name;
+
+    let fractal = fracb.runFractal(options);
+    
+    if(fractal == null){
+        res.status(400);
+        res.send("Request failed");
+    }
+    else{
+        let width = Math.pow(options.functions.length, options.iterations);
+        let height = Math.pow(options.functions[0].length, options.iterations);
+
+        new Jimp(width, height, (err, image) => {
+            if (err) throw err;
+
+            const encoder = new GIFEncoder(width, height);
+            encoder.createReadStream().pipe(fs.createWriteStream(`${__dirname}/../www/images/${name}.gif`))
+            encoder.start();
+            encoder.setRepeat(0);
+            encoder.setDelay(120);
+            encoder.setQuality(10);
+
+            let numframes = options.numframes || 10;
+
+            for(let n = 0; n < numframes; n++){
+                image.scan(0, 0, image.bitmap.width, image.bitmap.height, (x,y,idx) =>{
+                    let col;
+                    if(n==0){
+                        col = fractal[y*width + x](options.colors)[0];
+                    }
+                    else{
+                        let pix = Jimp.intToRGBA(image.getPixelColor(x, y));
+                        col = fractal[y*width + x]([[pix.r, pix.g, pix.b]])[0];
+                    }
+                    
+                    image.bitmap.data[idx] = col[0];
+                    image.bitmap.data[idx+1] = col[1];
+                    image.bitmap.data[idx+2] = col[2];
+                    image.bitmap.data[idx+3] = 255;
+
+                    if (x == image.bitmap.width - 1 && y == image.bitmap.height - 1) {
+                        console.log(n);
+                        encoder.addFrame(image.bitmap.data);
+                    }
+                })
+                
+
+                if(n == numframes-1){
+                    encoder.finish();
+                    res.status(200);
+                    res.json({'url': `${__dirname}/../www/images/${name}.gif`});
+                }
+            }
+            
+        });
+    }
+})
 
 function changeOptionsRandom(options){
     let width = options.functions.length;
