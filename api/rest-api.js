@@ -10,6 +10,7 @@ const aws = require('aws-sdk');
 const S3_BUCKET = process.env.S3_BUCKET_NAME;
 const GIFEncoder = require('gifencoder')
 const { execFile } = require('child_process');
+const randomfuncs = require('../www/randomfuncs');
 
 aws.config.region='us-east-2';
 
@@ -212,33 +213,7 @@ function changeOptionsRandom(options){
     let w = Math.floor(Math.random() * width);
     let h = Math.floor(Math.random() * height);
     
-    let addon;
-    let rand = Math.random();
-    let num = (Math.floor(Math.random() * 5) + 2)
-    //num = 2
-    if(Math.random() < .5){
-        addon = "*" + num.toString() + "/" + (num - 1).toString()
-    }
-    else {
-        addon = "/" + num + "*" + (num - 1).toString()
-    }
-/*
-    if(rand < 0.05){
-        addon = addon + "+1"
-    }
-    else if(rand > 0.95){
-        addon = addon + "-1"
-    }
-*/
-
-    /*
-    else if (rand > .25){
-        addon = "*" + num + "/10"//"*9/10"
-    }
-    else{
-        addon = "/" + num + "*10"//"*10/9"
-    }*/
-    options.functions[w][h][c][comp] = options.functions[w][h][c][comp] + addon;
+    options.functions[w][h][c][comp] += randomfuncs.randOp(numcolors);
 }
 
 router.post('/api/gif', (req, res) => {
