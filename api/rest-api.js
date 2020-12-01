@@ -83,6 +83,7 @@ router.post('/api/funcs', (req, res) => {
     const name = uuid();
     let options = req.body;
     options.name = name;
+    options.numcolors = 1 // because we will only have one color in the image to change
 
     let fractal = fracb.runFractal(options);
     console.log("got fractal")
@@ -95,8 +96,9 @@ router.post('/api/funcs', (req, res) => {
         let width = Math.pow(options.functions.length, options.iterations);
         let height = Math.pow(options.functions[0].length, options.iterations);
 
-            Jimp.read(`${__dirname}/../www/images/38af4618-54f5-4938-a377-535a1bf0f244.png`, (err, image) => {
+            Jimp.read(`${__dirname}/../www/images/baseimage.png`, (err, image) => {
             if (err) throw err;
+            image.resize(width, height);
 
             image.scan(0, 0, image.bitmap.width, image.bitmap.height, (x,y,idx) =>{
                 let pix = Jimp.intToRGBA(image.getPixelColor(x, y));
