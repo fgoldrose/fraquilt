@@ -83,7 +83,6 @@ router.post('/api/funcs', (req, res) => {
     const name = uuid();
     let options = req.body;
     options.name = name;
-    options.numcolors = 1 // because we will only have one color in the image to change
 
     let fractal = fracb.runFractal(options);
     console.log("got fractal")
@@ -96,9 +95,9 @@ router.post('/api/funcs', (req, res) => {
         let width = Math.pow(options.functions.length, options.iterations);
         let height = Math.pow(options.functions[0].length, options.iterations);
 
-            Jimp.read(`${__dirname}/../www/images/baseimage.png`, (err, image) => {
+        Jimp.read(`${__dirname}/../www/images/baseimage.png`, (err, image) => {
             if (err) throw err;
-            image.resize(width, height);
+            image = image.resize(width, height);
 
             image.scan(0, 0, image.bitmap.width, image.bitmap.height, (x,y,idx) =>{
                 let pix = Jimp.intToRGBA(image.getPixelColor(x, y));
@@ -137,6 +136,7 @@ router.post('/api/funcsgif', (req, res) => {
     options.name = name;
 
     let fractal = fracb.runFractal(options);
+    console.log("got fractal")
     
     if(fractal == null){
         res.status(400);
@@ -146,8 +146,10 @@ router.post('/api/funcsgif', (req, res) => {
         let width = Math.pow(options.functions.length, options.iterations);
         let height = Math.pow(options.functions[0].length, options.iterations);
 
+        //Jimp.read(`${__dirname}/../www/images/baseimage.png`, (err, image) => {
         new Jimp(width, height, (err, image) => {
             if (err) throw err;
+            image = image.resize(width, height);
 
             const encoder = new GIFEncoder(width, height);
             encoder.createReadStream().pipe(fs.createWriteStream(`${__dirname}/../www/images/${name}.gif`))
@@ -168,7 +170,7 @@ router.post('/api/funcsgif', (req, res) => {
                         let pix = Jimp.intToRGBA(image.getPixelColor(x, y));
                         col = fractal[y*width + x]([[pix.r, pix.g, pix.b]])[0];
                     }
-                    
+
                     image.bitmap.data[idx] = col[0];
                     image.bitmap.data[idx+1] = col[1];
                     image.bitmap.data[idx+2] = col[2];
@@ -179,7 +181,6 @@ router.post('/api/funcsgif', (req, res) => {
                         encoder.addFrame(image.bitmap.data);
                     }
                 })
-                
 
                 if(n == numframes-1){
                     encoder.finish();

@@ -52,7 +52,7 @@
                 }
             }
 
-            if(Math.random() < 0.3){
+            if(Math.random() < 0.5){
                 ret += randOp(numcols);
             }
             return ret;
@@ -66,9 +66,9 @@
                 case 1:
                     return "-" + randVal(numcols, 0.3, 1, 255);
                 case 2:
-                    return "*" + randVal(numcols, 1, 2, 4);
+                    return "*" + randVal(numcols, 1, 2, 2);
                 case 3:
-                    return "/" + randVal(numcols, 1, 2, 4);
+                    return "/" + randVal(numcols, 1, 2, 2);
             }
         }
 
@@ -81,7 +81,7 @@
                     for(let color=0; color < numcols; color++){
                         let colarr = []
                         for(let comp=0; comp < 3; comp++){
-                            colarr.push(randVal(numcols, 0, 256));
+                            colarr.push(randVal(numcols, 0, 255));
 
                             /*
                             if(Math.random() < likely1){
@@ -164,7 +164,7 @@
             })
         }
         function generateGif(){
-            let numcols = parseInt(document.getElementById("width").value, 10);
+            let numcols = parseInt(document.getElementById("colors").value, 10);
             let randc = randColors(numcols);
 
             let randf = randFuncs(numcols, parseInt(document.getElementById("width").value, 10), parseInt(document.getElementById("width").value, 10));
@@ -172,7 +172,7 @@
             console.log(parseInt(document.getElementById("frames").value, 10));
             const data = {
                 "iterations" : parseInt(document.getElementById("iter").value, 10),
-                "colors" : randc,
+                "colors" : new Array(numcols).fill([2,2,2]),
                 "functions": randf,
                 "numframes": parseInt(document.getElementById("frames").value, 10)
             }
