@@ -63,7 +63,7 @@ router.post('/api', (req, res) => {
                 });
                 image.write(`${__dirname}/../www/images/${options.name}.png`);
                 res.status(200);
-                res.json({'url': `${__dirname}/../www/images/${options.name}.png`});
+                res.json({'url': `http://localhost:${process.env.PORT}/images/${options.name}.png`});
             }
             else{
                 image.getBuffer(Jimp.MIME_PNG, (err, img) => {
