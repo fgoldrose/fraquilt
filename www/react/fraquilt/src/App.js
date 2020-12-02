@@ -17,6 +17,12 @@ function NumInput(props) {
     )
 }
 
+function ColorInput(props){
+  return (
+    <input type="color" value={props.value} onChange={e => props.onChange(e.target.value, props.i)}/>
+    )
+}
+
 function ColorFuncs(props){
   return (
     <div style={{display: 'flex', flexDirection: 'column', padding:'5px', margin:'2px', border: '1px solid black'}}>
@@ -90,7 +96,7 @@ class Fraquilt extends React.Component {
       width: props.width,
       height: props.numcolors,
       iterations: props.iterations,
-      colors: Array(props.numcolors).fill(["255","255","255"]),
+      colors: Array(props.numcolors).fill([255,255,255]),
       functions: this.resetFunctions(props.width, props.height, props.numcolors),
       url: ""
     };
@@ -110,6 +116,32 @@ class Fraquilt extends React.Component {
       emptyfunctions.push(row);
     }
     return emptyfunctions;
+  }
+
+  hexToRGB(hex) {
+    var bigint = parseInt(hex.slice(1), 16);
+    var r = (bigint >> 16) & 255;
+    var g = (bigint >> 8) & 255;
+    var b = bigint & 255;
+
+    return [r,g,b];
+  }
+
+  rgbToHex(color) {
+    let r = color[RED];
+    let b = color[BLUE];
+    let g = color[GREEN];
+
+    return '#' + [r, g, b].map(x => {
+      const hex = x.toString(16);
+      return hex.length === 1 ? '0' + hex : hex
+    }).join('');
+  }
+
+  changeColors = (c, i) => {
+    const colors = this.state.colors.slice();
+    colors[i] = this.hexToRGB(c);
+    this.setState(ps => ({...ps, colors: colors}))
   }
 
   changeFunctions = (x, y, newvals) => {
@@ -166,7 +198,7 @@ class Fraquilt extends React.Component {
     fetch(data.url, {method: 'HEAD'})
       .then(r => {
           if(r.status == 200){
-              this.setState(ps => ({...ps, src: data.url}))
+              this.setState(ps => ({...ps, url: data.url}))
           }
           else {
               setTimeout(() => this.getImage(data), 500);
@@ -175,6 +207,11 @@ class Fraquilt extends React.Component {
   }
 
   render() {
+    let colorpickers = [];
+    for(let i=0; i < this.state.numcolors; i++){
+      colorpickers.push(<ColorInput key={i} i={i} value={this.rgbToHex(this.state.colors[i])} onChange={this.changeColors}/>)
+    }
+
     return(
       <div>
       <label>Iterations</label>
@@ -183,9 +220,11 @@ class Fraquilt extends React.Component {
       <NumInput key="numcolors" value={this.state.numcolors} onChange={this.changeNumColors}/>
       <label>Width</label>
       <NumInput key="width" value={this.state.width} onChange={this.changeWidth}/>
+      <div>{colorpickers}</div>
       <Picker functions={this.state.functions} width={this.state.width} height={this.state.height} numcolors={this.state.numcolors} onChange = {this.changeFunctions}/>
       <button onClick={this.generateImage}>Generate</button>
-      <img src={this.state.url} width={600} heigh={600} style={{imageRendering: 'pixelated', imageRendering: '-moz-crisp-edges'}} />
+      <br/>
+      <img src={this.state.url} width={600} heigh={600} style={{imageRendering: 'pixelated'}} />
       </div>
       )
   }
