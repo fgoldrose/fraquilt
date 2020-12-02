@@ -17,13 +17,24 @@ function scaleColor(i){
     }
 }
 
-function frac(image, n, x, y, colors, funcs, width){
+function setPixel(image, width, x, y, color){
+    let index = (y * width + x) * 4
+    image[index] = scaleColor(color[0]);
+    image[index + 1] = scaleColor(color[1]);
+    image[index + 2] = scaleColor(color[2]);
+    image[index + 3] = 255;
+}
+
+function frac(image, n, x, y, colors, funcs, width, pixelwidth){
     if(n <= 0){
         // CREATE BASE IMAGE at x y
+        setPixel(image, pixelwidth, x, y, colors[0])
+        /*
         let r = scaleColor(colors[0][0]);
         let g = scaleColor(colors[0][1]);
         let b = scaleColor(colors[0][2]);
         image.setPixelColor(Jimp.rgbaToInt(r, g, b, 255), x, y);
+        */
     }
     else{
         for(let row=0; row < funcs.length; row++){
@@ -31,7 +42,7 @@ function frac(image, n, x, y, colors, funcs, width){
                 //console.log(n, colors, funcs[row][col](colors));
 
                 frac(image, n-1, x + row * Math.pow(funcs.length ,(n-1)),
-                 y + col * Math.pow(width, (n-1)), funcs[row][col](colors), funcs, width);
+                 y + col * Math.pow(width, (n-1)), funcs[row][col](colors), funcs, width, pixelwidth);
             }
         }
     }
@@ -193,15 +204,15 @@ function runFractal(options){
 
         let funcs = parseAllFunctions(options.functions, options.colors.length);
 
-        let width = Math.pow(funcs.length, options.iterations);
-        let height = Math.pow(funcs[0].length, options.iterations);
-        if(width > 4000 || height > 4000){
+        let pixelwidth = Math.pow(funcs.length, options.iterations);
+        let pixelheight = Math.pow(funcs[0].length, options.iterations);
+        if(pixelwidth > 4000 || pixelheight > 4000){
             throw new Error('Image too big');
         }
 
-        let fractal = new Jimp(width, height, '#FFFFFF');
-        
-        frac(fractal, options.iterations, 0, 0, options.colors, funcs, funcs[0].length);   
+        //let fractal = new Jimp(width, height, '#FFFFFF');
+        let fractal = Buffer.alloc(pixelwidth*pixelheight*4);
+        frac(fractal, options.iterations, 0, 0, options.colors, funcs, funcs[0].length, pixelwidth);   
         //fractal.write(`${__dirname}/../www/images/${options.name}.png`);
         return fractal;
     }
