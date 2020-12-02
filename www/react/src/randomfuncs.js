@@ -1,7 +1,7 @@
 
 // Allow code to be used in browser and node
 if(typeof exports == 'undefined'){
-    var exports = this['randomfuncs'] = {};
+    var exports = {};
 }
 
 
@@ -54,7 +54,7 @@ function randOp(numcols){
     }
 }
 
-function randFuncs(numcols, width, height){
+export function randFuncs(numcols, width, height){
     let res = []
     for(let w=0; w < width; w++){
         let warr = []

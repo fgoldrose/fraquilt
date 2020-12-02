@@ -1,5 +1,6 @@
 import './App.css';
 import React from 'react';
+import {randFuncs} from './randomfuncs';
 
 const RED = 0;
 const GREEN = 1;
@@ -206,6 +207,12 @@ class Fraquilt extends React.Component {
     })
   }
 
+  generateRandom = () => {
+    let fs = randFuncs(this.state.numcolors, this.state.width, this.state.height);
+    this.setState(ps => ({...ps, functions: fs}), this.generateImage);
+    //this.generateImage();
+  }
+
   render() {
     let colorpickers = [];
     for(let i=0; i < this.state.numcolors; i++){
@@ -222,6 +229,7 @@ class Fraquilt extends React.Component {
       <NumInput key="width" value={this.state.width} onChange={this.changeWidth}/>
       <div>{colorpickers}</div>
       <Picker functions={this.state.functions} width={this.state.width} height={this.state.height} numcolors={this.state.numcolors} onChange = {this.changeFunctions}/>
+      <button onClick={this.generateRandom}>Random</button>
       <button onClick={this.generateImage}>Generate</button>
       <br/>
       <img src={this.state.url} width={600} heigh={600} style={{imageRendering: 'pixelated'}} />
