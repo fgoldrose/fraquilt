@@ -4,8 +4,11 @@ const bodyParser = require("body-parser");
 const restAPI = require("./api/rest-api.js")
 const fs = require("fs");
 const port = process.env.PORT || 3000;
+const cors = require('cors');
 
+app.use(cors());
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(restAPI);
 app.use(express.static('www'));
 
