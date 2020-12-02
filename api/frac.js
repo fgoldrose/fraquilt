@@ -41,8 +41,8 @@ function frac(image, n, x, y, colors, funcs, width, pixelwidth){
             for(let col=0; col < width; col++){
                 //console.log(n, colors, funcs[row][col](colors));
 
-                frac(image, n-1, x + row * Math.pow(funcs.length ,(n-1)),
-                 y + col * Math.pow(width, (n-1)), funcs[row][col](colors), funcs, width, pixelwidth);
+                frac(image, n-1, x+ col * Math.pow(width, (n-1)) ,
+                 y + row * Math.pow(funcs.length ,(n-1)), funcs[row][col](colors), funcs, width, pixelwidth);
             }
         }
     }

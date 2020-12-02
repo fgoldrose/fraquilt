@@ -157,7 +157,7 @@ class Fraquilt extends React.Component {
   changeNumColors = (n) => {
     this.setState(ps => ({...ps
                           , numcolors: n
-                          , colors: Array(n).fill(["255", "255", "255"])
+                          , colors: Array(n).fill([255,255,255])
                           , functions: this.resetFunctions(ps.width, ps.height, n)}));
   }
 
@@ -185,11 +185,11 @@ class Fraquilt extends React.Component {
 
      fetch(url, req)
         .then(res => {
-          if(res.status == 200){
+          if(res.status === 200){
                res.json().then(this.getImage)      
           } 
           else {
-              this.setState(ps => ({...ps, src: ""}))
+              this.setState(ps => ({...ps, url: ""}))
           }                   
       })
   }
@@ -197,7 +197,7 @@ class Fraquilt extends React.Component {
   getImage = (data) => {
     fetch(data.url, {method: 'HEAD'})
       .then(r => {
-          if(r.status == 200){
+          if(r.status === 200){
               this.setState(ps => ({...ps, url: data.url}))
           }
           else {
