@@ -7,6 +7,9 @@ const {Worker, isMainThread, workerData} = require('worker_threads');
 const Jimp = require('jimp');
 const aws = require('aws-sdk');
 const S3_BUCKET = process.env.S3_BUCKET_NAME;
+const GIFEncoder = require('gifencoder')
+const { execFile } = require('child_process');
+const randomfuncs = require('../www/randomfuncs');
 
 aws.config.region='us-east-2';
 
@@ -74,5 +77,7 @@ router.post('/api', (req, res) => {
         });
     }
 })
+
+
 
 module.exports = router;
