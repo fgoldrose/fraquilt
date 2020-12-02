@@ -10,6 +10,36 @@ const S3_BUCKET = process.env.S3_BUCKET_NAME;
 
 aws.config.region='us-east-2';
 
+const local = true;
+
+function writeS3(options, data){
+    const s3 = new aws.S3();
+    const s3Paramsjson = {
+        Bucket: S3_BUCKET,
+        Key: options.name + ".json",
+        Body: JSON.stringify(options),
+        ContentType: "application/json",
+        ACL:'public-read'
+    }
+
+    const s3Paramsimg = {
+        Bucket: S3_BUCKET,
+        Key: options.name + ".png",
+        Body: img,
+        ContentType: "image/png",
+        ACL:'public-read'
+    }
+    s3.upload(s3Paramsjson, (err, data) =>{
+        if (err) throw err;
+    });
+    s3.upload(s3Paramsimg, (err, data) =>{
+        if (err) throw err;
+    });
+
+    res.status(200);
+    res.json({'url' : `https://fraquilt.s3.us-east-2.amazonaws.com/${options.name}.png`});
+}
+
 router.post('/api', (req, res) => {
     const name = uuid();
     let options = req.body;
@@ -22,31 +52,26 @@ router.post('/api', (req, res) => {
         res.send("Request failed");
     }
     else{
-        fractal.getBuffer(Jimp.MIME_PNG, (err, img) => {
-            const s3 = new aws.S3();
-            const s3Paramsjson = {
-                Bucket: S3_BUCKET,
-                Key: name + ".json",
-                Body: JSON.stringify(options),
-                ContentType: "application/json"
-            }
+        let width = Math.pow(options.functions.length, options.iterations);
+        let height = Math.pow(options.functions[0].length, options.iterations);
+        new Jimp({data: fractal, width, height}, (err, image) => {
+            if (err) throw err;
 
-            const s3Paramsimg = {
-                Bucket: S3_BUCKET,
-                Key: name + ".png",
-                Body: img,
-                ContentType: "image/png",
-                ACL:'public-read'
+            if(local){
+                fs.writeFile(`${__dirname}/../www/images/${options.name}.json`, JSON.stringify(req.body), (err) => {
+                    if (err) throw err;
+                });
+                image.write(`${__dirname}/../www/images/${options.name}.png`);
+                res.status(200);
+                res.json({'url': `${__dirname}/../www/images/${options.name}.png`});
             }
-            s3.upload(s3Paramsjson, (err, data) =>{
+            else{
+                image.getBuffer(Jimp.MIME_PNG, (err, img) => {
                 if (err) throw err;
-            });
-            s3.upload(s3Paramsimg, (err, data) =>{
-                if (err) throw err;
-            });
-
-            res.status(200);
-            res.json({'url' : `https://fraquilt.s3.us-east-2.amazonaws.com/${name}.png`});});
+                writeS3(options, img);
+            })
+            }
+        });
     }
 })
 
