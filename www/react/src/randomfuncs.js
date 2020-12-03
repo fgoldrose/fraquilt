@@ -14,7 +14,7 @@ function hexToRGB(hex) {
     return [r,g,b];
 }
 
-function randVal(numcols, likelynum, numfrom, numto){
+function randVal(numcols, likelynum, likelycontinue, numfrom, numto){
     let n = Math.random();
     let ret;
     if(n < likelynum){
@@ -34,7 +34,7 @@ function randVal(numcols, likelynum, numfrom, numto){
         }
     }
 
-    if(Math.random() < 0.5){
+    if(Math.random() < likelycontinue){
         ret += randOp(numcols);
     }
     return ret;
@@ -44,13 +44,13 @@ function randOp(numcols){
     let o = Math.floor(Math.random() * 4);
     switch(o){
         case 0:
-            return "+" + randVal(numcols, 0.3, 1, 255);
+            return "+" + randVal(numcols, 0.5, 0, 1, 100);
         case 1:
-            return "-" + randVal(numcols, 0.3, 1, 255);
+            return "-" + randVal(numcols, 0.5, 0, 1, 100);
         case 2:
-            return "*" + randVal(numcols, 1, 2, 2);
+            return "*" + randVal(numcols, 1, 0, 2, 4);
         case 3:
-            return "/" + randVal(numcols, 1, 2, 2);
+            return "/" + randVal(numcols, 1, 0, 2, 4);
     }
 }
 
@@ -63,7 +63,7 @@ export function randFuncs(numcols, width, height){
             for(let color=0; color < numcols; color++){
                 let colarr = []
                 for(let comp=0; comp < 3; comp++){
-                    colarr.push(randVal(numcols, 0, 255));
+                    colarr.push(randVal(numcols, 0, 0.3, 255));
                 }
                 harr.push(colarr)
             }
