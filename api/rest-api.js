@@ -41,6 +41,7 @@ function writeS3(options, data){
 }
 
 router.post('/api', (req, res) => {
+    let t0 = new Date();
     const name = uuid();
     let options = req.body;
     options.name = name;
@@ -64,6 +65,7 @@ router.post('/api', (req, res) => {
                 image.write(`${__dirname}/../www/images/${options.name}.png`);
                 res.status(200);
                 res.json({'url': `http://localhost:${process.env.PORT}/images/${options.name}.png`});
+                console.log(new Date() - t0);
             }
             else{
                 image.getBuffer(Jimp.MIME_PNG, (err, img) => {
