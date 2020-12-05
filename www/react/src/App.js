@@ -189,7 +189,7 @@ class Fraquilt extends React.Component {
     }
     console.log(JSON.stringify(data))
 
-    const url = './api/'
+    const url = '/api/'
     const req = {
         method: 'POST',
         headers : {'Content-Type' : 'application/json'},
@@ -218,7 +218,7 @@ class Fraquilt extends React.Component {
     fetch(data.url, {method: 'HEAD'})
       .then(r => {
           if(r.status === 200){
-              this.setState(ps => ({...ps, url: data.url, recent: ([data.url] + ps.recent)}));
+              this.setState(ps => ({...ps, url: data.url, recent: [data.url].concat(ps.recent)}));
           }
           else {
               setTimeout(() => this.getImage(data), 500);

@@ -48,11 +48,6 @@ function writeS3(res, options, data){
         res.end();
 }
 
-
-router.get('/', (req, res) => {
-    res.sendFile(path.resolve(`${__dirname}/../www/react/build/index.html`));
-})
-
 router.post('/api', (req, res) => {
     let t0 = new Date();
     const name = uuid();
