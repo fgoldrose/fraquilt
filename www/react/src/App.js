@@ -1,6 +1,6 @@
 import './App.css';
 import React from 'react';
-import {randFuncs} from './randomfuncs';
+import {randFuncs, randColors} from './randomfuncs';
 
 const RED = 0;
 const GREEN = 1;
@@ -88,6 +88,17 @@ class Picker extends React.Component {
   }
 }
 
+function RecentImages(props){
+  return (
+    <div style={{'padding': '3px'}}>
+      {props.imagelist.map((i) => (
+        <a target="_blank" href={i}>
+          <img src={i} width={100} height={100} style={{imageRendering: 'pixelated'}} />
+        </a>))}
+    </div>
+    );
+}
+
 class Fraquilt extends React.Component {
   constructor(props) {
     super(props);
@@ -99,7 +110,8 @@ class Fraquilt extends React.Component {
       iterations: props.iterations,
       colors: Array(props.numcolors).fill([255,255,255]),
       functions: this.resetFunctions(props.width, props.height, props.numcolors),
-      url: ""
+      url: "",
+      recent: []
     };
   }
 
@@ -177,7 +189,7 @@ class Fraquilt extends React.Component {
     }
     console.log(JSON.stringify(data))
 
-    const url = 'http://localhost:5000/api'
+    const url = './api/'
     const req = {
         method: 'POST',
         headers : {'Content-Type' : 'application/json'},
@@ -187,7 +199,14 @@ class Fraquilt extends React.Component {
      fetch(url, req)
         .then(res => {
           if(res.status === 200){
-               res.json().then(this.getImage)      
+               res.json().then(data => {
+                if('image' in data){
+                  this.setState(ps => ({...ps, url: data.image, recent: [data.url].concat(ps.recent)}))
+                }
+                else{
+                  this.getImage(data);
+                }
+              })      
           } 
           else {
               this.setState(ps => ({...ps, url: ""}))
@@ -199,7 +218,7 @@ class Fraquilt extends React.Component {
     fetch(data.url, {method: 'HEAD'})
       .then(r => {
           if(r.status === 200){
-              this.setState(ps => ({...ps, url: data.url}))
+              this.setState(ps => ({...ps, url: data.url, recent: ([data.url] + ps.recent)}));
           }
           else {
               setTimeout(() => this.getImage(data), 500);
@@ -209,8 +228,8 @@ class Fraquilt extends React.Component {
 
   generateRandom = () => {
     let fs = randFuncs(this.state.numcolors, this.state.width, this.state.height);
-    this.setState(ps => ({...ps, functions: fs}), this.generateImage);
-    //this.generateImage();
+    let cs = randColors(this.state.numcolors);
+    this.setState(ps => ({...ps, colors: cs, functions: fs}), this.generateImage);
   }
 
   render() {
@@ -233,6 +252,9 @@ class Fraquilt extends React.Component {
       <button onClick={this.generateImage}>Generate</button>
       <br/>
       <img src={this.state.url} width={600} heigh={600} style={{imageRendering: 'pixelated'}} />
+      <br/>
+      <label>Recently Created: </label>
+      <RecentImages imagelist={this.state.recent}/>
       </div>
       )
   }

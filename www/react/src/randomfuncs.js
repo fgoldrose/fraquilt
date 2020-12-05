@@ -51,6 +51,8 @@ function randOp(numcols){
             return "*" + randVal(numcols, 1, 0, 2, 4);
         case 3:
             return "/" + randVal(numcols, 1, 0, 2, 4);
+        default:
+            throw Error("very impossible");
     }
 }
 
@@ -75,7 +77,7 @@ export function randFuncs(numcols, width, height){
 }
 
 
-function randColors(numcolors){
+export function randColors(numcolors){
     let cols = []
     for(let i=0; i < numcolors; i++){
         let r = Math.floor(Math.random() * 256);
