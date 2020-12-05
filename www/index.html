@@ -2,6 +2,7 @@
 <html>
 <head>
     <title>Fraquilt</title>
+    <script type="text/javascript" src="/randomfuncs.js"></script>
 </head>
 <body>
     <main>
@@ -13,101 +14,15 @@
         <label>Colors</label>
         <input type="number" id="colors" value="1" style="width:50px">
         <button onClick="generateImage()">Generate</button>
+        <label>Frames</label>
+        <input type="number" id="frames" value="20" style="width:50px">
+        <button onClick="generateGif()">Gif</button>
         <br>
         <img src="" width=600 heigh=600 style="image-rendering: pixelated; image-rendering: -moz-crisp-edges;" id="generate">
         
     </main>
     <script>
         let imagedata;
-
-        function hexToRGB(hex) {
-            var bigint = parseInt(hex.slice(1), 16);
-            var r = (bigint >> 16) & 255;
-            var g = (bigint >> 8) & 255;
-            var b = bigint & 255;
-
-            return [r,g,b];
-        }
-
-        function randVal(numcols, likelynum, numfrom, numto){
-            let n = Math.random();
-            let ret;
-            if(n < likelynum){
-                ret = (Math.floor(Math.random() * (numto-numfrom)) + numfrom).toString(10)
-            }
-            else{
-                let c = Math.floor(Math.random() * 3)
-                let i = Math.floor(Math.random() * numcols);
-                if(c == 0){
-                    ret = "r" + i.toString(10)
-                }
-                else if(c == 1){
-                    ret = "g" + i.toString(10)
-                }
-                else {
-                    ret = "b" + i.toString(10)
-                }
-            }
-
-            if(Math.random() < 0.5){
-                ret += randOp(numcols);
-            }
-            return ret;
-        } 
-
-        function randOp(numcols){
-            let o = Math.floor(Math.random() * 4);
-            switch(o){
-                case 0:
-                    return "+" + randVal(numcols, 0.3, 1, 255);
-                case 1:
-                    return "-" + randVal(numcols, 0.3, 1, 255);
-                case 2:
-                    return "*" + randVal(numcols, 1, 2, 4);
-                case 3:
-                    return "/" + randVal(numcols, 1, 2, 4);
-            }
-        }
-
-        function randFuncs(numcols, width, height){
-            let res = []
-            for(let w=0; w < width; w++){
-                let warr = []
-                for(let h=0; h < height; h++){
-                    let harr = []
-                    for(let color=0; color < numcols; color++){
-                        let colarr = []
-                        for(let comp=0; comp < 3; comp++){
-                            colarr.push(randVal(numcols, 0, 256));
-
-                            /*
-                            if(Math.random() < likely1){
-                                colarr.push(randVal(numcols, likely2, numrange) + randOp() + randVal(numcols, likely3, numrange))
-                            }
-                            else{
-                                colarr.push(randVal(numcols, 0, numrange));
-                            }
-                            */
-                        }
-                        harr.push(colarr)
-                    }
-                    warr.push(harr)
-                }
-                res.push(warr)
-            }
-            return res
-        }
-
-        function randColors(numcolors){
-            let cols = []
-            for(let i=0; i < numcolors; i++){
-                let r = Math.floor(Math.random() * 256);
-                let g = Math.floor(Math.random() * 256);
-                let b = Math.floor(Math.random() * 256);
-                cols.push([r,g,b]);
-            }
-            return cols;
-        }
 
         function generateImage(){
             let numcols = parseInt(document.getElementById("colors").value, 10);
@@ -131,7 +46,51 @@
             }
             console.log(JSON.stringify(data));
 
-            const url = '/api'
+            const url = '/api/funcs'
+            const req = {
+                method: 'POST',
+                headers : {'Content-Type' : 'application/json'},
+                body: JSON.stringify(data)
+             }
+
+             fetch(url, req)
+                .then(res => {
+                    if(res.status == 200){
+                         res.json().then(getImage)      
+                    } 
+                    else {
+                        generate.setAttribute('src', "")
+                    }                   
+                })
+        }
+
+        function getImage(data){
+            fetch(data.url, {method: 'HEAD'})
+                .then(r => {
+                    if(r.status == 200){
+                        generate.setAttribute('src', data.url)
+                    }
+                    else {
+                        setTimeout(() => getImage(data), 500);
+                    }
+            })
+        }
+        function generateGif(){
+            let numcols = parseInt(document.getElementById("colors").value, 10);
+            let randc = randColors(numcols);
+
+            let randf = randFuncs(numcols, parseInt(document.getElementById("width").value, 10), parseInt(document.getElementById("width").value, 10));
+
+            console.log(parseInt(document.getElementById("frames").value, 10));
+            const data = {
+                "iterations" : parseInt(document.getElementById("iter").value, 10),
+                "colors" : new Array(numcols).fill([2,2,2]),
+                "functions": randf,
+                "numframes": parseInt(document.getElementById("frames").value, 10)
+            }
+            console.log(JSON.stringify(data));
+
+            const url = '/api/funcsgif'
             const req = {
                 method: 'POST',
                 headers : {'Content-Type' : 'application/json'},

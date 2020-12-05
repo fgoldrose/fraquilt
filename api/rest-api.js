@@ -7,38 +7,51 @@ const {Worker, isMainThread, workerData} = require('worker_threads');
 const Jimp = require('jimp');
 const aws = require('aws-sdk');
 const S3_BUCKET = process.env.S3_BUCKET_NAME;
-
+const GIFEncoder = require('gifencoder')
+const { execFile } = require('child_process');
+const path = require('path');
+//const randomfuncs = require('../www/randomfuncs');
+const port = process.env.PORT || 3000;
 aws.config.region='us-east-2';
 
-const local = true;
+const local = false;
 
-function writeS3(options, data){
+function writeS3(res, options, data){
     const s3 = new aws.S3();
+
     const s3Paramsjson = {
         Bucket: S3_BUCKET,
         Key: options.name + ".json",
         Body: JSON.stringify(options),
-        ContentType: "application/json",
+        ContentType: "text/json",
         ACL:'public-read'
     }
 
     const s3Paramsimg = {
         Bucket: S3_BUCKET,
         Key: options.name + ".png",
-        Body: img,
+        Body: data,
         ContentType: "image/png",
         ACL:'public-read'
     }
-    s3.upload(s3Paramsjson, (err, data) =>{
+
+    s3.upload(s3Paramsimg, (err, data) =>{
         if (err) throw err;
     });
-    s3.upload(s3Paramsimg, (err, data) =>{
+    s3.upload(s3Paramsjson, (err, data) =>{
         if (err) throw err;
     });
 
     res.status(200);
-    res.json({'url' : `https://fraquilt.s3.us-east-2.amazonaws.com/${options.name}.png`});
+        res.json({'url' : `https://fraquilt.s3.amazonaws.com/${options.name}.png`
+                , 'image': "data:image/png;base64, " + data.toString('base64')});
+        res.end();
 }
+
+
+router.get('/', (req, res) => {
+    res.sendFile(path.resolve(`${__dirname}/../www/react/build/index.html`));
+})
 
 router.post('/api', (req, res) => {
     let t0 = new Date();
@@ -64,17 +77,18 @@ router.post('/api', (req, res) => {
                 });
                 image.write(`${__dirname}/../www/images/${options.name}.png`);
                 res.status(200);
-                res.json({'url': `http://localhost:${process.env.PORT}/images/${options.name}.png`});
-                console.log(new Date() - t0);
+                res.json({'url': `http://localhost:${port}/images/${options.name}.png`});
             }
             else{
                 image.getBuffer(Jimp.MIME_PNG, (err, img) => {
                 if (err) throw err;
-                writeS3(options, img);
+                writeS3(res, options, img);
             })
             }
         });
     }
 })
+
+
 
 module.exports = router;
