@@ -190,6 +190,9 @@ function parseAllFunctions(funcs, numcolors){
 
 function runFractal(options){
     try{
+        if(options.iterations < 0){
+            throw new Error('Cannot have negative iterations');
+        }
         if(options.colors.length < 1){
             throw new Error('Must have at least one color');
         }

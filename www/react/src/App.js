@@ -1,6 +1,9 @@
 import './App.css';
 import React from 'react';
 import {randFuncs, randColors} from './randomfuncs';
+import spinner from './loading.gif';
+import servererror from './servererror.png';
+import generationerror from './generationerror.png';
 
 const RED = 0;
 const GREEN = 1;
@@ -8,14 +11,67 @@ const BLUE = 2;
 
 function TextInput(props) {
   return (
-    <input type="text" value={props.value} onChange={props.onChange}/>
+    <input type="text" value={props.value} onChange={props.onChange} style={{width: '70px'}} />
     )
 }
 
 function NumInput(props) {
   return (
-    <input type="number" value={props.value} onChange={e => props.onChange(parseInt(e.target.value), 10)}/>
+    <input type="number" value={props.value} min={0} style={{width: '50px'}}
+    onChange={e => props.onChange(parseInt(e.target.value), 10)}/>
     )
+}
+
+class DisplayImage extends React.Component {
+  constructor(props){
+    super(props);
+    this.state = {
+      url: props.url,
+      loading: false
+    }
+  }
+
+  getImage = (url, n) => {
+    if(n <= 0){
+      this.setState(ps => ({...ps, loading: false, url: servererror}));
+    }
+    else{
+      fetch(url, {method: 'HEAD'})
+        .then(r => {
+            if(r.status === 200){
+                this.setState(ps => ({...ps, loading: false}));
+            }
+            else {
+                setTimeout(() => this.getImage(url, n-1), 1000);
+            }
+      })
+    }
+  }
+
+  processError = (err) => {
+    this.setState(ps => ({...ps, loading: true}));
+    this.getImage(this.props.url, 30);
+  }
+
+  render(){
+    if(this.state.loading){
+      return <img src={spinner} alt='' width={this.props.width} height={this.props.height}/>;
+    }
+    else{
+      return <img src={this.state.url} onError={this.processError} alt='' width={this.props.width} height={this.props.height} style={{imageRendering: this.props.rendering}}/>;
+    }
+  }
+}
+
+function RecentImages(props){
+  return (
+    <div style={{'padding': '3px'}}>
+      {props.imagelist.map((i) => (
+        <a key={i} target="_blank" rel="noreferrer" href={i} style={{padding:'5px'}}>
+          <DisplayImage url={i} width={100} height={100} rendering={'auto'}/>
+        </a>))}
+    </div>
+    );
 }
 
 function ColorInput(props){
@@ -49,7 +105,7 @@ class Division extends React.Component {
     }
 
       return (
-        <div style={{display: 'flex', flexWrap: 'wrap', padding:'10px', border: '2px solid black'}}>
+        <div style={{display: 'flex', alignItems: 'center', flexWrap: 'wrap', padding:'10px', border: '2px solid black'}}>
           {colorfuncs}
         </div>
         )
@@ -88,17 +144,6 @@ class Picker extends React.Component {
   }
 }
 
-function RecentImages(props){
-  return (
-    <div style={{'padding': '3px'}}>
-      {props.imagelist.map((i) => (
-        <a target="_blank" href={i}>
-          <img src={i} width={100} height={100} style={{imageRendering: 'pixelated'}} />
-        </a>))}
-    </div>
-    );
-}
-
 class Fraquilt extends React.Component {
   constructor(props) {
     super(props);
@@ -106,11 +151,11 @@ class Fraquilt extends React.Component {
     this.state = {
       numcolors: props.numcolors,
       width: props.width,
-      height: props.numcolors,
+      height: props.height,
       iterations: props.iterations,
       colors: Array(props.numcolors).fill([255,255,255]),
       functions: this.resetFunctions(props.width, props.height, props.numcolors),
-      url: "",
+      url: "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==",
       recent: []
     };
   }
@@ -181,13 +226,19 @@ class Fraquilt extends React.Component {
                           , functions: this.resetFunctions(n, n, ps.numcolors)}));
   }
 
+  generateRandom = () => {
+    let fs = randFuncs(this.state.numcolors, this.state.width, this.state.height);
+    let cs = randColors(this.state.numcolors);
+    this.setState(ps => ({...ps, colors: cs, functions: fs}), this.generateImage);
+  }
+
   generateImage = () => {
+    this.setState(ps => ({...ps, url: spinner}));
     let data = {
       "iterations": this.state.iterations,
       "colors": this.state.colors,
       "functions": this.state.functions
     }
-    console.log(JSON.stringify(data))
 
     const url = '/api/'
     const req = {
@@ -200,36 +251,23 @@ class Fraquilt extends React.Component {
         .then(res => {
           if(res.status === 200){
                res.json().then(data => {
-                if('image' in data){
+                if('image' in data){ //get base64 image to avoid waiting for s3 upload
                   this.setState(ps => ({...ps, url: data.image, recent: [data.url].concat(ps.recent)}))
                 }
                 else{
-                  this.getImage(data);
+                  this.setState(ps => ({...ps, url: data.url, recent: [data.url].concat(ps.recent)}))
                 }
               })      
           } 
+          else if(res.status === 400){
+            // expected result of invalid request
+            this.setState(ps => ({...ps, url: generationerror}))
+          }
           else {
-              this.setState(ps => ({...ps, url: ""}))
+            // unexpected error from server
+              this.setState(ps => ({...ps, url: servererror}))
           }                   
       })
-  }
-
-  getImage = (data) => {
-    fetch(data.url, {method: 'HEAD'})
-      .then(r => {
-          if(r.status === 200){
-              this.setState(ps => ({...ps, url: data.url, recent: [data.url].concat(ps.recent)}));
-          }
-          else {
-              setTimeout(() => this.getImage(data), 500);
-          }
-    })
-  }
-
-  generateRandom = () => {
-    let fs = randFuncs(this.state.numcolors, this.state.width, this.state.height);
-    let cs = randColors(this.state.numcolors);
-    this.setState(ps => ({...ps, colors: cs, functions: fs}), this.generateImage);
   }
 
   render() {
@@ -239,22 +277,34 @@ class Fraquilt extends React.Component {
     }
 
     return(
-      <div>
-      <label>Iterations</label>
-      <NumInput key="iterations" value={this.state.iterations} onChange={this.changeIterations}/>
-      <label>Number of colors</label>
-      <NumInput key="numcolors" value={this.state.numcolors} onChange={this.changeNumColors}/>
-      <label>Width</label>
-      <NumInput key="width" value={this.state.width} onChange={this.changeWidth}/>
-      <div>{colorpickers}</div>
-      <Picker functions={this.state.functions} width={this.state.width} height={this.state.height} numcolors={this.state.numcolors} onChange = {this.changeFunctions}/>
-      <button onClick={this.generateRandom}>Random</button>
-      <button onClick={this.generateImage}>Generate</button>
-      <br/>
-      <img src={this.state.url} width={600} heigh={600} style={{imageRendering: 'pixelated'}} />
-      <br/>
-      <label>Recently Created: </label>
-      <RecentImages imagelist={this.state.recent}/>
+      <div style={{padding: '10px'}}>
+        <div style={{display: 'flex', flexWrap: 'wrap'}}>
+          <div style={{flex: "1 1 50%", margin:'5px'}}>
+            <h2>Fraquilt</h2>
+            <div style={{margin: '3px'}}>
+            <label>Iterations</label>
+            <NumInput key="iterations" value={this.state.iterations} onChange={this.changeIterations}/>
+            </div>
+            <div style={{margin: '3px'}}>
+            <label>Number of colors</label>
+            <NumInput key="numcolors" value={this.state.numcolors} onChange={this.changeNumColors}/>
+            </div>
+            <div style={{margin: '3px'}}>
+            <label>Width</label>
+            <NumInput key="width" value={this.state.width} onChange={this.changeWidth}/>
+            </div>
+            <div style={{margin: '3px'}}>{colorpickers}</div>  
+            <Picker functions={this.state.functions} width={this.state.width} height={this.state.height} numcolors={this.state.numcolors} onChange = {this.changeFunctions}/>
+            <button onClick={this.generateRandom}>Random</button>
+            <button onClick={this.generateImage}>Generate</button>
+          </div>
+          <div style={{flexShrink: 0, flexGrow: 1}}>
+            <DisplayImage url={this.state.url} key={this.state.url} width={600} height={600} rendering={'pixelated'}/>
+          </div>
+        </div>
+        <br/>
+        <label>Recently Created: </label>
+        <RecentImages imagelist={this.state.recent}/>
       </div>
       )
   }
@@ -263,7 +313,7 @@ class Fraquilt extends React.Component {
 function App() {
   return (
     <div className="App">
-      <Fraquilt width={2} height={2} numcolors={2} iterations={9}/>
+      <Fraquilt width={2} height={2} numcolors={1} iterations={9}/>
     </div>
   );
 }
