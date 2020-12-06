@@ -17,8 +17,17 @@ function TextInput(props) {
 
 function NumInput(props) {
   return (
-    <input type="number" value={props.value} min={0} style={{width: '50px'}}
-    onChange={e => props.onChange(parseInt(e.target.value), 10)}/>
+    <input type="number" value={props.value.toString()} min={0} max={props.max} style={{width: '50px'}}
+    onChange={(e) => {
+      let n = parseInt(e.target.value, 10);
+      if(isNaN(n) || n < 0){
+        n = 0;
+      }
+      if(n > props.max){
+        n = props.max;
+      }
+      props.onChange(n);
+    }}/>
     )
 }
 
@@ -283,15 +292,15 @@ class Fraquilt extends React.Component {
             <h2>Fraquilt</h2>
             <div style={{margin: '3px'}}>
             <label>Iterations</label>
-            <NumInput key="iterations" value={this.state.iterations} onChange={this.changeIterations}/>
+            <NumInput key="iterations" value={this.state.iterations} max={12} onChange={this.changeIterations}/>
             </div>
             <div style={{margin: '3px'}}>
             <label>Number of colors</label>
-            <NumInput key="numcolors" value={this.state.numcolors} onChange={this.changeNumColors}/>
+            <NumInput key="numcolors" value={this.state.numcolors} max={10} onChange={this.changeNumColors}/>
             </div>
             <div style={{margin: '3px'}}>
             <label>Width</label>
-            <NumInput key="width" value={this.state.width} onChange={this.changeWidth}/>
+            <NumInput key="width" value={this.state.width} max={10} onChange={this.changeWidth}/>
             </div>
             <div style={{margin: '3px'}}>{colorpickers}</div>  
             <Picker functions={this.state.functions} width={this.state.width} height={this.state.height} numcolors={this.state.numcolors} onChange = {this.changeFunctions}/>
