@@ -18,108 +18,67 @@ type alias Adjustments a =
     }
 
 
-recursiveView : (config -> String) -> (config -> Html.Attribute msg) -> Adjustments config -> Int -> config -> Html msg
-recursiveView toString bottom adjustments levelA configA =
+bottomConfigValues : Adjustments config -> Int -> config -> List ( String, config )
+bottomConfigValues adjustments level_ config_ =
     let
-        specificHelper : Dict ( Int, String ) (Html msg) -> String -> Int -> config -> ( Html msg, Dict ( Int, String ) (Html msg) )
-        specificHelper memoizer pathKey level config =
-            case Dict.get ( level, toString config ) memoizer of
-                Just html ->
-                    -- let
-                    --     _ =
-                    --         Debug.log "memoized" ( level, config )
-                    -- in
-                    ( html, memoizer )
-
-                Nothing ->
-                    -- let
-                    --     _ =
-                    --         Debug.log "new" ( level, config )
-                    -- in
-                    if level == 0 then
-                        let
-                            html =
-                                div [ class "inner", bottom config ] []
-                        in
-                        ( html
-                        , Dict.insert ( 0, toString config ) html memoizer
-                        )
-
-                    else
-                        let
-                            ( tl, memoizer2 ) =
-                                specificHelper memoizer
-                                    (pathKey ++ "-tl")
-                                    (level - 1)
-                                    (adjustments.tl config)
-
-                            ( tr, memoizer3 ) =
-                                specificHelper memoizer2
-                                    (pathKey ++ "-tr")
-                                    (level - 1)
-                                    (adjustments.tr config)
-
-                            ( bl, memoizer4 ) =
-                                specificHelper memoizer3
-                                    (pathKey ++ "-bl")
-                                    (level - 1)
-                                    (adjustments.bl config)
-
-                            ( br, memoizer5 ) =
-                                specificHelper memoizer4
-                                    (pathKey ++ "-br")
-                                    (level - 1)
-                                    (adjustments.br config)
-
-                            html =
-                                Keyed.node "div"
-                                    []
-                                    [ ( pathKey ++ "-tl"
-                                      , div
-                                            [ class "box tl"
-                                            ]
-                                            [ tl
-                                            ]
-                                      )
-                                    , ( pathKey ++ "-tr"
-                                      , div [ class "box tr" ]
-                                            [ tr
-                                            ]
-                                      )
-                                    , ( pathKey ++ "-bl"
-                                      , div [ class "box bl" ]
-                                            [ bl
-                                            ]
-                                      )
-                                    , ( pathKey ++ "-br"
-                                      , div [ class "box br" ]
-                                            [ br
-                                            ]
-                                      )
-                                    ]
-                        in
-                        ( html
-                        , Dict.insert ( level, toString config ) html memoizer5
-                        )
-    in
-    specificHelper Dict.empty "" levelA configA |> Tuple.first
-
-
-constructStyles : (String -> config -> String) -> Adjustments config -> Int -> config -> String
-constructStyles makeStyleString adjustments levelA configA =
-    let
-        specificHelper : String -> Int -> config -> String
-        specificHelper pathKey level config =
+        helper : String -> Int -> config -> List ( String, config ) -> List ( String, config )
+        helper pathKey level config soFar =
             if level == 0 then
-                makeStyleString pathKey config
+                ( pathKey, config ) :: soFar
 
             else
-                specificHelper (pathKey ++ "-tl") (level - 1) (adjustments.tl config)
-                    ++ specificHelper (pathKey ++ "-tr") (level - 1) (adjustments.tr config)
-                    ++ specificHelper (pathKey ++ "-bl") (level - 1) (adjustments.bl config)
-                    ++ specificHelper (pathKey ++ "-br") (level - 1) (adjustments.br config)
+                helper (pathKey ++ "-tl")
+                    (level - 1)
+                    (adjustments.tl config)
+                    (helper (pathKey ++ "-tr")
+                        (level - 1)
+                        (adjustments.tr config)
+                        (helper (pathKey ++ "-bl")
+                            (level - 1)
+                            (adjustments.bl config)
+                            (helper (pathKey ++ "-br") (level - 1) (adjustments.br config) soFar)
+                        )
+                    )
     in
-    specificHelper "path" levelA configA
+    helper "path" level_ config_ []
+
+
+type alias Style =
+    ( String, String )
+
+
+constructStyles : (config -> List Style) -> Adjustments config -> Int -> config -> String
+constructStyles makeStyles adjustments levelA configA =
+    let
+        configValueList =
+            bottomConfigValues adjustments levelA configA
+    in
+    mapStylesToStringTCO makeStyles configValueList
+
+
+mapStylesToStringTCO : (config -> List Style) -> List ( String, config ) -> String
+mapStylesToStringTCO getStyles configValueList =
+    let
+        toStyleString : String -> List Style -> String
+        toStyleString pathKey styles =
+            "#"
+                ++ pathKey
+                ++ " { "
+                ++ (List.map (\( key, value ) -> key ++ ": " ++ value ++ ";") styles |> String.join " ")
+                ++ " }"
+
+        helper : List ( String, config ) -> String -> String
+        helper configValues soFar =
+            case configValues of
+                [] ->
+                    soFar
+
+                ( pathKey, config ) :: rest ->
+                    helper
+                        rest
+                        (toStyleString pathKey (getStyles config) ++ soFar)
+    in
+    helper configValueList ""
 
 
 frameWork : Int -> String -> String -> Html msg
@@ -148,55 +107,6 @@ frameWork level pathKey currentPosition =
                 (pathKey ++ "-br")
                 "br"
             ]
-
-
-
--- specificHelper : Int -> String -> Html msg
--- specificHelper level configString =
---     let
---         _ =
---             Debug.log "level" ( level, configString )
---         config =
---             fromStr configString
---     in
---     if level == 0 then
---         div
---             [ class "inner", bot config ]
---             []
---     else
---         Keyed.node "div"
---             []
---             [ ( String.fromInt (level - 1) ++ " " ++ toStr (adj.tl config)
---               , div
---                     [ class "box tl"
---                     ]
---                     [ lazy2 specificHelper
---                         (level - 1)
---                         (toStr (adj.tl config))
---                     ]
---               )
---             , ( String.fromInt (level - 1) ++ " " ++ toStr (adj.tr config)
---               , div [ class "box tr" ]
---                     [ lazy2 specificHelper
---                         (level - 1)
---                         (toStr (adj.tr config))
---                     ]
---               )
---             , ( String.fromInt (level - 1) ++ " " ++ toStr (adj.bl config)
---               , div [ class "box bl" ]
---                     [ lazy2 specificHelper
---                         (level - 1)
---                         (toStr (adj.bl config))
---                     ]
---               )
---             , ( String.fromInt (level - 1) ++ " " ++ toStr (adj.br config)
---               , div [ class "box br" ]
---                     [ lazy2 specificHelper
---                         (level - 1)
---                         (toStr (adj.br config))
---                     ]
---               )
---             ]
 
 
 type alias A =
@@ -247,20 +157,23 @@ view model =
         [ Keyed.node "style"
             []
             [ ( String.fromInt model
-              , Html.text <|
-                    Debug.log "styles" <|
-                        constructStyles
-                            (\pathKey { r, g, b } ->
-                                "#"
-                                    ++ pathKey
-                                    ++ " { background-color: rgb("
-                                    ++ String.join ","
-                                        [ String.fromInt r, String.fromInt g, String.fromInt b ]
-                                    ++ ");} "
+              , Keyed.node "style"
+                    []
+                    [ ( String.fromInt model
+                      , Html.text
+                            (constructStyles
+                                (\{ r, g, b } ->
+                                    [ ( "background-color"
+                                      , "rgb(" ++ String.join "," [ String.fromInt r, String.fromInt g, String.fromInt b ] ++ ")"
+                                      )
+                                    ]
+                                )
+                                adj
+                                level
+                                { r = 100, g = model, b = 20 }
                             )
-                            adj
-                            level
-                            { r = 100, g = model, b = 20 }
+                      )
+                    ]
               )
             ]
         , lazy3 frameWork level "path" "outer"
