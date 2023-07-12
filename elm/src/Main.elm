@@ -7,6 +7,7 @@ import Html.Attributes exposing (class, id, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Html.Keyed as Keyed
 import Html.Lazy exposing (lazy3)
+import List.Extra as List
 import Random
 
 
@@ -100,90 +101,73 @@ frameWork level pathKey currentPosition =
             ]
 
 
-type alias RgbColor =
-    { r : Int, g : Int, b : Int }
+type alias Config =
+    List Int
 
 
-type ColorProperty
-    = R
-    | G
-    | B
+randomListShuffleFunction : Int -> Random.Generator (List Int -> List Int)
+randomListShuffleFunction listLength =
+    Random.list listLength (Random.int 0 (listLength - 1))
+        |> Random.map
+            (\listOfIndices ->
+                let
+                    _ =
+                        Debug.log "listindices" listOfIndices
+                in
+                \listInput ->
+                    List.indexedMap
+                        (\index item ->
+                            let
+                                swapInput =
+                                    List.getAt index listOfIndices
+                                        |> Maybe.withDefault index
+                            in
+                            List.getAt swapInput listInput
+                                |> Maybe.withDefault item
+                        )
+                        listInput
+            )
 
 
-randomColorProperty : Random.Generator ColorProperty
-randomColorProperty =
-    Random.uniform R [ G, B ]
-
-
-colorPropertyToColor : ColorProperty -> RgbColor -> Int
-colorPropertyToColor colorProperty { r, g, b } =
-    case colorProperty of
-        R ->
-            r
-
-        G ->
-            g
-
-        B ->
-            b
-
-
-swap : ColorProperty -> ColorProperty -> RgbColor -> RgbColor
-swap swapColor newColorProperty color =
-    case swapColor of
-        R ->
-            { color | r = colorPropertyToColor newColorProperty color }
-
-        G ->
-            { color | b = colorPropertyToColor newColorProperty color }
-
-        B ->
-            { color | g = colorPropertyToColor newColorProperty color }
-
-
-randomizeAdjustments : Random.Generator (Adjustments RgbColor)
-randomizeAdjustments =
+randomizeAdjustments : Int -> Random.Generator (Adjustments Config)
+randomizeAdjustments listLength =
     let
-        swapAll r g b =
-            -- let
-            --     _ =
-            --         Debug.log "r" r
-            --     _ =
-            --         Debug.log "g" g
-            --     _ =
-            --         Debug.log "b" b
-            -- in
-            swap R r >> swap G g >> swap B b
+        randomList =
+            randomListShuffleFunction listLength
     in
     Random.map4 Adjustments
-        (Random.map3 swapAll
-            randomColorProperty
-            randomColorProperty
-            randomColorProperty
-        )
-        (Random.map3 swapAll randomColorProperty randomColorProperty randomColorProperty)
-        (Random.map3 swapAll randomColorProperty randomColorProperty randomColorProperty)
-        (Random.map3 swapAll randomColorProperty randomColorProperty randomColorProperty)
+        randomList
+        randomList
+        randomList
+        randomList
 
 
-randomizeColor : Random.Generator RgbColor
-randomizeColor =
-    -- Not actually random cause it's better to have a range when swapping for more interesting variations
-    Random.map3 RgbColor
-        (Random.int 0 85)
-        (Random.int 85 170)
-        (Random.int 170 255)
+randomizeColor : Int -> Random.Generator Config
+randomizeColor n =
+    Random.list n (Random.int 0 255)
 
 
-rgbToStyles : RgbColor -> List Style
-rgbToStyles { r, g, b } =
+rgbToStyles : Config -> List Style
+rgbToStyles list =
+    let
+        ( r, g, b ) =
+            case list of
+                r_ :: g_ :: b_ :: _ ->
+                    ( r_, g_, b_ )
+
+                _ ->
+                    ( 0, 0, 0 )
+    in
     [ ( "background-color"
-      , "rgb(" ++ String.join "," [ String.fromInt r, String.fromInt g, String.fromInt b ] ++ ")"
+      , "rgb("
+            ++ String.join ","
+                [ String.fromInt r, String.fromInt g, String.fromInt b ]
+            ++ ")"
       )
     ]
 
 
-view : Model RgbColor -> Html Msg
+view : Model Config -> Html Msg
 view model =
     let
         _ =
@@ -220,6 +204,7 @@ type alias Model config =
     , level : Int
     , initConfig : config
     , randomSeed : Random.Seed
+    , numberOfVariables : Int -- Length of list
     }
 
 
@@ -227,9 +212,12 @@ type alias Flags =
     { randomSeed : Int }
 
 
-init : Flags -> ( Model RgbColor, Cmd Msg )
+init : Flags -> ( Model Config, Cmd Msg )
 init flags =
     let
+        numberOfVariables =
+            10
+
         level =
             7
 
@@ -237,10 +225,10 @@ init flags =
             Random.initialSeed flags.randomSeed
 
         ( adjustments, seedAfterAdustments ) =
-            Random.step randomizeAdjustments seed
+            Random.step (randomizeAdjustments numberOfVariables) seed
 
         ( newInitialColor, seedAfterColor ) =
-            Random.step randomizeColor seedAfterAdustments
+            Random.step (randomizeColor numberOfVariables) seedAfterAdustments
     in
     ( { iteration = 0
       , configs = bottomConfigValues adjustments level newInitialColor
@@ -248,6 +236,7 @@ init flags =
       , level = level
       , initConfig = newInitialColor |> Debug.log "init color"
       , randomSeed = seedAfterColor
+      , numberOfVariables = numberOfVariables
       }
     , Cmd.none
     )
@@ -258,7 +247,7 @@ type Msg
     | ChangeLevel Int
 
 
-update : Msg -> Model RgbColor -> ( Model RgbColor, Cmd msg )
+update : Msg -> Model Config -> ( Model Config, Cmd msg )
 update msg model =
     let
         recalcConfigs updatedModel =
@@ -275,10 +264,10 @@ update msg model =
         Randomize ->
             let
                 ( randomizedAdjustments, seedAfterAdustments ) =
-                    Random.step randomizeAdjustments model.randomSeed
+                    Random.step (randomizeAdjustments model.numberOfVariables) model.randomSeed
 
                 ( newInitialColor, newSeed ) =
-                    Random.step randomizeColor seedAfterAdustments
+                    Random.step (randomizeColor model.numberOfVariables) seedAfterAdustments
             in
             ( { model
                 | adjustments = randomizedAdjustments
@@ -298,7 +287,7 @@ update msg model =
             )
 
 
-main : Program Flags (Model RgbColor) Msg
+main : Program Flags (Model Config) Msg
 main =
     Browser.element
         { init = init
