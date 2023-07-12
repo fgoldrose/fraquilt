@@ -1,13 +1,13 @@
 module Main exposing (..)
 
 import Browser
-import Color
 import Dict exposing (Dict)
-import Html exposing (Html, b, button, div, text)
-import Html.Attributes exposing (class, id)
-import Html.Events exposing (onClick)
+import Html exposing (Html, b, button, div, input, main_, text)
+import Html.Attributes exposing (class, id, type_, value)
+import Html.Events exposing (onClick, onInput)
 import Html.Keyed as Keyed
 import Html.Lazy exposing (lazy3)
+import Random
 
 
 type alias Adjustments a =
@@ -16,6 +16,10 @@ type alias Adjustments a =
     , bl : a -> a
     , br : a -> a
     }
+
+
+type alias Style =
+    ( String, String )
 
 
 bottomConfigValues : Adjustments config -> Int -> config -> List ( String, config )
@@ -41,19 +45,6 @@ bottomConfigValues adjustments level_ config_ =
                     )
     in
     helper "path" level_ config_ []
-
-
-type alias Style =
-    ( String, String )
-
-
-constructStyles : (config -> List Style) -> Adjustments config -> Int -> config -> String
-constructStyles makeStyles adjustments levelA configA =
-    let
-        configValueList =
-            bottomConfigValues adjustments levelA configA
-    in
-    mapStylesToStringTCO makeStyles configValueList
 
 
 mapStylesToStringTCO : (config -> List Style) -> List ( String, config ) -> String
@@ -109,75 +100,112 @@ frameWork level pathKey currentPosition =
             ]
 
 
-type alias A =
+type alias RgbColor =
     { r : Int, g : Int, b : Int }
 
 
-adj =
-    { tl = \{ r, g, b } -> { r = g, g = b, b = r }
-    , tr = \{ r, g, b } -> { r = b, g = r, b = g }
-    , bl = \{ r, g, b } -> { r = r, g = b, b = r }
-    , br = \{ r, g, b } -> { r = r, g = g, b = b }
-    }
+type ColorProperty
+    = R
+    | G
+    | B
 
 
-bot { r, g, b } =
-    Html.Attributes.style "background-color"
-        (Color.toCssString (Color.rgb255 r g b))
+randomColorProperty : Random.Generator ColorProperty
+randomColorProperty =
+    Random.uniform R [ G, B ]
 
 
-toStr : A -> String
-toStr { r, g, b } =
-    String.fromInt r ++ "," ++ String.fromInt g ++ "," ++ String.fromInt b
+colorPropertyToColor : ColorProperty -> RgbColor -> Int
+colorPropertyToColor colorProperty { r, g, b } =
+    case colorProperty of
+        R ->
+            r
+
+        G ->
+            g
+
+        B ->
+            b
 
 
-fromStr : String -> A
-fromStr str =
-    case String.split "," str of
-        [ r, g, b ] ->
-            { r = String.toInt r |> Maybe.withDefault 0
-            , g = String.toInt g |> Maybe.withDefault 0
-            , b = String.toInt b |> Maybe.withDefault 0
-            }
+swap : ColorProperty -> ColorProperty -> RgbColor -> RgbColor
+swap swapColor newColorProperty color =
+    case swapColor of
+        R ->
+            { color | r = colorPropertyToColor newColorProperty color }
 
-        _ ->
-            { r = 0, g = 0, b = 0 }
+        G ->
+            { color | b = colorPropertyToColor newColorProperty color }
+
+        B ->
+            { color | g = colorPropertyToColor newColorProperty color }
 
 
-view : Model -> Html ()
+randomizeAdjustments : Random.Generator (Adjustments RgbColor)
+randomizeAdjustments =
+    let
+        swapAll r g b =
+            -- let
+            --     _ =
+            --         Debug.log "r" r
+            --     _ =
+            --         Debug.log "g" g
+            --     _ =
+            --         Debug.log "b" b
+            -- in
+            swap R r >> swap G g >> swap B b
+    in
+    Random.map4 Adjustments
+        (Random.map3 swapAll
+            randomColorProperty
+            randomColorProperty
+            randomColorProperty
+        )
+        (Random.map3 swapAll randomColorProperty randomColorProperty randomColorProperty)
+        (Random.map3 swapAll randomColorProperty randomColorProperty randomColorProperty)
+        (Random.map3 swapAll randomColorProperty randomColorProperty randomColorProperty)
+
+
+randomizeColor : Random.Generator RgbColor
+randomizeColor =
+    -- Not actually random cause it's better to have a range when swapping for more interesting variations
+    Random.map3 RgbColor
+        (Random.int 0 85)
+        (Random.int 85 170)
+        (Random.int 170 255)
+
+
+rgbToStyles : RgbColor -> List Style
+rgbToStyles { r, g, b } =
+    [ ( "background-color"
+      , "rgb(" ++ String.join "," [ String.fromInt r, String.fromInt g, String.fromInt b ] ++ ")"
+      )
+    ]
+
+
+view : Model RgbColor -> Html Msg
 view model =
     let
         _ =
-            Debug.log "View for level:" model
-
-        level =
-            8
+            Debug.log "View for level:" model.level
     in
     div []
         [ Keyed.node "style"
-            []
-            [ ( String.fromInt model
-              , Keyed.node "style"
-                    []
-                    [ ( String.fromInt model
-                      , Html.text
-                            (constructStyles
-                                (\{ r, g, b } ->
-                                    [ ( "background-color"
-                                      , "rgb(" ++ String.join "," [ String.fromInt r, String.fromInt g, String.fromInt b ] ++ ")"
-                                      )
-                                    ]
-                                )
-                                adj
-                                level
-                                { r = 100, g = model, b = 20 }
-                            )
-                      )
-                    ]
+            [ id (String.fromInt model.iteration) ]
+            [ ( String.fromInt model.iteration
+              , Html.text
+                    (mapStylesToStringTCO
+                        rgbToStyles
+                        model.configs
+                    )
               )
             ]
-        , lazy3 frameWork level "path" "outer"
-        , button [ onClick () ] [ text "Next size" ]
+        , Keyed.node "div"
+            []
+            [ ( String.fromInt model.level, lazy3 frameWork model.level "path" "outer" ) ]
+        , button [ onClick Randomize ] [ text "Random" ]
+        , button [ onClick (ChangeLevel (model.level - 1)) ] [ Html.text "- level" ]
+        , button [ onClick (ChangeLevel (model.level + 1)) ] [ Html.text "+ level" ]
         ]
 
 
@@ -185,19 +213,95 @@ view model =
 --
 
 
-type alias Model =
-    Int
+type alias Model config =
+    { iteration : Int
+    , configs : List ( String, config )
+    , adjustments : Adjustments config
+    , level : Int
+    , initConfig : config
+    , randomSeed : Random.Seed
+    }
 
 
-update : () -> Model -> ( Model, Cmd msg )
-update _ model =
-    ( model + 10, Cmd.none )
+type alias Flags =
+    { randomSeed : Int }
 
 
-main : Program () Model ()
+init : Flags -> ( Model RgbColor, Cmd Msg )
+init flags =
+    let
+        level =
+            7
+
+        seed =
+            Random.initialSeed flags.randomSeed
+
+        ( adjustments, seedAfterAdustments ) =
+            Random.step randomizeAdjustments seed
+
+        ( newInitialColor, seedAfterColor ) =
+            Random.step randomizeColor seedAfterAdustments
+    in
+    ( { iteration = 0
+      , configs = bottomConfigValues adjustments level newInitialColor
+      , adjustments = adjustments
+      , level = level
+      , initConfig = newInitialColor |> Debug.log "init color"
+      , randomSeed = seedAfterColor
+      }
+    , Cmd.none
+    )
+
+
+type Msg
+    = Randomize
+    | ChangeLevel Int
+
+
+update : Msg -> Model RgbColor -> ( Model RgbColor, Cmd msg )
+update msg model =
+    let
+        recalcConfigs updatedModel =
+            { updatedModel
+                | iteration = model.iteration + 1
+                , configs =
+                    bottomConfigValues
+                        updatedModel.adjustments
+                        updatedModel.level
+                        updatedModel.initConfig
+            }
+    in
+    case msg of
+        Randomize ->
+            let
+                ( randomizedAdjustments, seedAfterAdustments ) =
+                    Random.step randomizeAdjustments model.randomSeed
+
+                ( newInitialColor, newSeed ) =
+                    Random.step randomizeColor seedAfterAdustments
+            in
+            ( { model
+                | adjustments = randomizedAdjustments
+                , randomSeed = newSeed
+                , initConfig = newInitialColor
+              }
+                |> recalcConfigs
+            , Cmd.none
+            )
+
+        ChangeLevel i ->
+            ( { model
+                | level = i
+              }
+                |> recalcConfigs
+            , Cmd.none
+            )
+
+
+main : Program Flags (Model RgbColor) Msg
 main =
     Browser.element
-        { init = \_ -> ( 0, Cmd.none )
+        { init = init
         , view = view
         , update = update
         , subscriptions = \_ -> Sub.none

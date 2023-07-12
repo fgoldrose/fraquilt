@@ -2,7 +2,7 @@
 extra_images
 .env
 /elm/elm-stuff
-/elm/main.js
+/elm/src/main.js
 
 # Logs
 logs
