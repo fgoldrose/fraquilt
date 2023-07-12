@@ -4,7 +4,7 @@
   "description": "",
   "main": "./server.js",
   "scripts": {
-	"heroku-postbuild": "cd www/react && npm install && npm install --only=dev --no-shrinkwrap && npm run build",
+    "heroku-postbuild": "cd www/react && npm install && npm install --only=dev --no-shrinkwrap && npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -14,6 +14,7 @@
     "aws-sdk": "^2.734.0",
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",
+    "elm-live": "^4.0.2",
     "express": "^4.17.1",
     "gifencoder": "^2.0.1",
     "jimp": "^0.16.0",
