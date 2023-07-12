@@ -45,20 +45,12 @@ bottomConfigValues adjustments level_ config_ =
                         )
                     )
     in
-    helper "path" level_ config_ []
+    helper "#path" level_ config_ []
 
 
 mapStylesToStringTCO : (config -> List Style) -> List ( String, config ) -> String
 mapStylesToStringTCO getStyles configValueList =
     let
-        toStyleString : String -> List Style -> String
-        toStyleString pathKey styles =
-            "#"
-                ++ pathKey
-                ++ " { "
-                ++ (List.map (\( key, value ) -> key ++ ": " ++ value ++ ";") styles |> String.join " ")
-                ++ " }"
-
         helper : List ( String, config ) -> String -> String
         helper configValues soFar =
             case configValues of
@@ -73,11 +65,19 @@ mapStylesToStringTCO getStyles configValueList =
     helper configValueList ""
 
 
+toStyleString : String -> List Style -> String
+toStyleString pathKey styles =
+    pathKey
+        ++ " { "
+        ++ (List.map (\( key, value ) -> key ++ ": " ++ value ++ ";") styles |> String.join " ")
+        ++ " }"
+
+
 frameWork : Int -> String -> String -> Html msg
 frameWork level pathKey currentPosition =
     if level == 0 then
         div
-            [ class "box", class currentPosition, id pathKey ]
+            [ class "box inner", class currentPosition, id pathKey ]
             []
 
     else
@@ -110,10 +110,6 @@ randomListShuffleFunction listLength =
     Random.list listLength (Random.int 0 (listLength - 1))
         |> Random.map
             (\listOfIndices ->
-                let
-                    _ =
-                        Debug.log "listindices" listOfIndices
-                in
                 \listInput ->
                     List.indexedMap
                         (\index item ->
@@ -149,22 +145,34 @@ randomizeColor n =
 
 rgbToStyles : Config -> List Style
 rgbToStyles list =
-    let
-        ( r, g, b ) =
-            case list of
-                r_ :: g_ :: b_ :: _ ->
-                    ( r_, g_, b_ )
+    list
+        |> List.indexedMap
+            (\variable initialVar ->
+                ( "--var-" ++ String.fromInt variable
+                , "var(--initial-var-" ++ String.fromInt initialVar ++ ")"
+                )
+            )
 
-                _ ->
-                    ( 0, 0, 0 )
-    in
-    [ ( "background-color"
-      , "rgb("
-            ++ String.join ","
-                [ String.fromInt r, String.fromInt g, String.fromInt b ]
-            ++ ")"
-      )
-    ]
+
+initialColorVariables : Config -> List Style
+initialColorVariables list =
+    List.indexedMap
+        (\variable value ->
+            ( "--initial-var-" ++ String.fromInt variable
+            , String.fromInt value
+            )
+        )
+        list
+
+
+
+-- [ ( "background-color"
+--   , "rgb("
+--         ++ String.join ","
+--             [ String.fromInt r, String.fromInt g, String.fromInt b ]
+--         ++ ")"
+--   )
+-- ]
 
 
 view : Model Config -> Html Msg
@@ -181,6 +189,13 @@ view model =
                     (mapStylesToStringTCO
                         rgbToStyles
                         model.configs
+                    )
+              )
+            , ( String.join "-" (List.map String.fromInt model.initConfig)
+              , Html.text
+                    (initialColorVariables
+                        model.initConfig
+                        |> toStyleString ":root"
                     )
               )
             ]
@@ -231,7 +246,7 @@ init flags =
             Random.step (randomizeColor numberOfVariables) seedAfterAdustments
     in
     ( { iteration = 0
-      , configs = bottomConfigValues adjustments level newInitialColor
+      , configs = bottomConfigValues adjustments level (List.range 0 (numberOfVariables - 1))
       , adjustments = adjustments
       , level = level
       , initConfig = newInitialColor |> Debug.log "init color"
@@ -257,7 +272,7 @@ update msg model =
                     bottomConfigValues
                         updatedModel.adjustments
                         updatedModel.level
-                        updatedModel.initConfig
+                        (List.range 0 (updatedModel.numberOfVariables - 1))
             }
     in
     case msg of

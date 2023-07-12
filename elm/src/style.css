@@ -9,8 +9,7 @@ div {
 }
 
 .inner {
-    width: 100%;
-    height: 100%;
+    background-color: rgb(var(--var-0), var(--var-1), var(--var-2));
 }
 
 .tl {
