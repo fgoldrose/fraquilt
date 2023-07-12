@@ -5165,9 +5165,66 @@ var $elm$core$Platform$Sub$batch = _Platform_batch;
 var $elm$core$Platform$Sub$none = $elm$core$Platform$Sub$batch(_List_Nil);
 var $author$project$Main$update = F2(
 	function (_v0, model) {
-		return _Utils_Tuple2(model + 1, $elm$core$Platform$Cmd$none);
+		return _Utils_Tuple2(model + 10, $elm$core$Platform$Cmd$none);
 	});
+var $author$project$Main$adj = {
+	bl: function (_v0) {
+		var r = _v0.r;
+		var g = _v0.g;
+		var b = _v0.b;
+		return {b: r, g: b, r: r};
+	},
+	br: function (_v1) {
+		var r = _v1.r;
+		var g = _v1.g;
+		var b = _v1.b;
+		return {b: b, g: g, r: r};
+	},
+	tl: function (_v2) {
+		var r = _v2.r;
+		var g = _v2.g;
+		var b = _v2.b;
+		return {b: r, g: b, r: g};
+	},
+	tr: function (_v3) {
+		var r = _v3.r;
+		var g = _v3.g;
+		var b = _v3.b;
+		return {b: g, g: r, r: b};
+	}
+};
 var $elm$html$Html$button = _VirtualDom_node('button');
+var $author$project$Main$constructStyles = F4(
+	function (makeStyleString, adjustments, levelA, configA) {
+		var specificHelper = F3(
+			function (pathKey, level, config) {
+				return (!level) ? A2(makeStyleString, pathKey, config) : _Utils_ap(
+					A3(
+						specificHelper,
+						pathKey + '-tl',
+						level - 1,
+						adjustments.tl(config)),
+					_Utils_ap(
+						A3(
+							specificHelper,
+							pathKey + '-tr',
+							level - 1,
+							adjustments.tr(config)),
+						_Utils_ap(
+							A3(
+								specificHelper,
+								pathKey + '-bl',
+								level - 1,
+								adjustments.bl(config)),
+							A3(
+								specificHelper,
+								pathKey + '-br',
+								level - 1,
+								adjustments.br(config)))));
+			});
+		return A3(specificHelper, 'path', levelA, configA);
+	});
+var $elm$html$Html$div = _VirtualDom_node('div');
 var $elm$json$Json$Encode$string = _Json_wrap;
 var $elm$html$Html$Attributes$stringProperty = F2(
 	function (key, string) {
@@ -5177,10 +5234,40 @@ var $elm$html$Html$Attributes$stringProperty = F2(
 			$elm$json$Json$Encode$string(string));
 	});
 var $elm$html$Html$Attributes$class = $elm$html$Html$Attributes$stringProperty('className');
-var $elm$html$Html$div = _VirtualDom_node('div');
-var $elm$virtual_dom$VirtualDom$lazy2 = _VirtualDom_lazy2;
-var $elm$html$Html$Lazy$lazy2 = $elm$virtual_dom$VirtualDom$lazy2;
+var $elm$html$Html$Attributes$id = $elm$html$Html$Attributes$stringProperty('id');
+var $author$project$Main$frameWork = F3(
+	function (level, pathKey, currentPosition) {
+		return (!level) ? A2(
+			$elm$html$Html$div,
+			_List_fromArray(
+				[
+					$elm$html$Html$Attributes$class('box'),
+					$elm$html$Html$Attributes$class(currentPosition),
+					$elm$html$Html$Attributes$id(pathKey)
+				]),
+			_List_Nil) : A2(
+			$elm$html$Html$div,
+			_List_fromArray(
+				[
+					$elm$html$Html$Attributes$class('box'),
+					$elm$html$Html$Attributes$class(currentPosition)
+				]),
+			_List_fromArray(
+				[
+					A3($author$project$Main$frameWork, level - 1, pathKey + '-tl', 'tl'),
+					A3($author$project$Main$frameWork, level - 1, pathKey + '-tr', 'tr'),
+					A3($author$project$Main$frameWork, level - 1, pathKey + '-bl', 'bl'),
+					A3($author$project$Main$frameWork, level - 1, pathKey + '-br', 'br')
+				]));
+	});
+var $elm$virtual_dom$VirtualDom$lazy3 = _VirtualDom_lazy3;
+var $elm$html$Html$Lazy$lazy3 = $elm$virtual_dom$VirtualDom$lazy3;
 var $elm$core$Debug$log = _Debug_log;
+var $elm$virtual_dom$VirtualDom$keyedNode = function (tag) {
+	return _VirtualDom_keyedNode(
+		_VirtualDom_noScript(tag));
+};
+var $elm$html$Html$Keyed$node = $elm$virtual_dom$VirtualDom$keyedNode;
 var $elm$virtual_dom$VirtualDom$Normal = function (a) {
 	return {$: 'Normal', a: a};
 };
@@ -5198,220 +5285,50 @@ var $elm$html$Html$Events$onClick = function (msg) {
 		'click',
 		$elm$json$Json$Decode$succeed(msg));
 };
-var $author$project$Main$adj = {
-	bl: $elm$core$Basics$identity,
-	br: $elm$core$Basics$identity,
-	tl: function (_v0) {
-		var r = _v0.r;
-		var g = _v0.g;
-		var b = _v0.b;
-		return {b: r, g: b, r: g};
-	},
-	tr: $elm$core$Basics$identity
-};
-var $avh4$elm_color$Color$RgbaSpace = F4(
-	function (a, b, c, d) {
-		return {$: 'RgbaSpace', a: a, b: b, c: c, d: d};
-	});
-var $avh4$elm_color$Color$scaleFrom255 = function (c) {
-	return c / 255;
-};
-var $avh4$elm_color$Color$rgb255 = F3(
-	function (r, g, b) {
-		return A4(
-			$avh4$elm_color$Color$RgbaSpace,
-			$avh4$elm_color$Color$scaleFrom255(r),
-			$avh4$elm_color$Color$scaleFrom255(g),
-			$avh4$elm_color$Color$scaleFrom255(b),
-			1.0);
-	});
-var $elm$virtual_dom$VirtualDom$style = _VirtualDom_style;
-var $elm$html$Html$Attributes$style = $elm$virtual_dom$VirtualDom$style;
-var $elm$core$String$concat = function (strings) {
-	return A2($elm$core$String$join, '', strings);
-};
-var $elm$core$String$fromFloat = _String_fromNumber;
-var $elm$core$Basics$round = _Basics_round;
-var $avh4$elm_color$Color$toCssString = function (_v0) {
-	var r = _v0.a;
-	var g = _v0.b;
-	var b = _v0.c;
-	var a = _v0.d;
-	var roundTo = function (x) {
-		return $elm$core$Basics$round(x * 1000) / 1000;
-	};
-	var pct = function (x) {
-		return $elm$core$Basics$round(x * 10000) / 100;
-	};
-	return $elm$core$String$concat(
-		_List_fromArray(
-			[
-				'rgba(',
-				$elm$core$String$fromFloat(
-				pct(r)),
-				'%,',
-				$elm$core$String$fromFloat(
-				pct(g)),
-				'%,',
-				$elm$core$String$fromFloat(
-				pct(b)),
-				'%,',
-				$elm$core$String$fromFloat(
-				roundTo(a)),
-				')'
-			]));
-};
-var $author$project$Main$bot = function (_v0) {
-	var r = _v0.r;
-	var g = _v0.g;
-	var b = _v0.b;
-	return A2(
-		$elm$html$Html$Attributes$style,
-		'background-color',
-		$avh4$elm_color$Color$toCssString(
-			A3($avh4$elm_color$Color$rgb255, r, g, b)));
-};
-var $elm$core$Maybe$withDefault = F2(
-	function (_default, maybe) {
-		if (maybe.$ === 'Just') {
-			var value = maybe.a;
-			return value;
-		} else {
-			return _default;
-		}
-	});
-var $author$project$Main$fromStr = function (str) {
-	var _v0 = A2($elm$core$String$split, ',', str);
-	if (((_v0.b && _v0.b.b) && _v0.b.b.b) && (!_v0.b.b.b.b)) {
-		var r = _v0.a;
-		var _v1 = _v0.b;
-		var g = _v1.a;
-		var _v2 = _v1.b;
-		var b = _v2.a;
-		return {
-			b: A2(
-				$elm$core$Maybe$withDefault,
-				0,
-				$elm$core$String$toInt(b)),
-			g: A2(
-				$elm$core$Maybe$withDefault,
-				0,
-				$elm$core$String$toInt(g)),
-			r: A2(
-				$elm$core$Maybe$withDefault,
-				0,
-				$elm$core$String$toInt(r))
-		};
-	} else {
-		return {b: 0, g: 0, r: 0};
-	}
-};
-var $author$project$Main$toStr = function (_v0) {
-	var r = _v0.r;
-	var g = _v0.g;
-	var b = _v0.b;
-	return $elm$core$String$fromInt(r) + (',' + ($elm$core$String$fromInt(g) + (',' + $elm$core$String$fromInt(b))));
-};
-var $author$project$Main$specificHelper = F2(
-	function (level, configString) {
-		var config = $author$project$Main$fromStr(configString);
-		var _v0 = A2(
-			$elm$core$Debug$log,
-			'level',
-			_Utils_Tuple2(level, configString));
-		return (!level) ? A2(
-			$elm$html$Html$div,
-			_List_fromArray(
-				[
-					$elm$html$Html$Attributes$class('inner'),
-					$author$project$Main$bot(config)
-				]),
-			_List_Nil) : A2(
-			$elm$html$Html$div,
-			_List_Nil,
-			_List_fromArray(
-				[
-					A2(
-					$elm$html$Html$div,
-					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$class('box tl')
-						]),
-					_List_fromArray(
-						[
-							A3(
-							$elm$html$Html$Lazy$lazy2,
-							$author$project$Main$specificHelper,
-							level - 1,
-							$author$project$Main$toStr(
-								$author$project$Main$adj.tl(config)))
-						])),
-					A2(
-					$elm$html$Html$div,
-					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$class('box tr')
-						]),
-					_List_fromArray(
-						[
-							A3(
-							$elm$html$Html$Lazy$lazy2,
-							$author$project$Main$specificHelper,
-							level - 1,
-							$author$project$Main$toStr(
-								$author$project$Main$adj.tr(config)))
-						])),
-					A2(
-					$elm$html$Html$div,
-					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$class('box bl')
-						]),
-					_List_fromArray(
-						[
-							A3(
-							$elm$html$Html$Lazy$lazy2,
-							$author$project$Main$specificHelper,
-							level - 1,
-							$author$project$Main$toStr(
-								$author$project$Main$adj.bl(config)))
-						])),
-					A2(
-					$elm$html$Html$div,
-					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$class('box br')
-						]),
-					_List_fromArray(
-						[
-							A3(
-							$elm$html$Html$Lazy$lazy2,
-							$author$project$Main$specificHelper,
-							level - 1,
-							$author$project$Main$toStr(
-								$author$project$Main$adj.br(config)))
-						]))
-				]));
-	});
 var $elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
 var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
 var $author$project$Main$view = function (model) {
+	var level = 8;
 	var _v0 = A2($elm$core$Debug$log, 'View for level:', model);
 	return A2(
 		$elm$html$Html$div,
 		_List_Nil,
 		_List_fromArray(
 			[
-				A2(
-				$elm$html$Html$div,
+				A3(
+				$elm$html$Html$Keyed$node,
+				'style',
+				_List_Nil,
 				_List_fromArray(
 					[
-						$elm$html$Html$Attributes$class('outer')
-					]),
-				_List_fromArray(
-					[
-						A3($elm$html$Html$Lazy$lazy2, $author$project$Main$specificHelper, model, '100,50,20')
+						_Utils_Tuple2(
+						$elm$core$String$fromInt(model),
+						$elm$html$Html$text(
+							A2(
+								$elm$core$Debug$log,
+								'styles',
+								A4(
+									$author$project$Main$constructStyles,
+									F2(
+										function (pathKey, _v1) {
+											var r = _v1.r;
+											var g = _v1.g;
+											var b = _v1.b;
+											return '#' + (pathKey + (' { background-color: rgb(' + (A2(
+												$elm$core$String$join,
+												',',
+												_List_fromArray(
+													[
+														$elm$core$String$fromInt(r),
+														$elm$core$String$fromInt(g),
+														$elm$core$String$fromInt(b)
+													])) + ');} ')));
+										}),
+									$author$project$Main$adj,
+									level,
+									{b: 20, g: model, r: 100}))))
 					])),
+				A4($elm$html$Html$Lazy$lazy3, $author$project$Main$frameWork, level, 'path', 'outer'),
 				A2(
 				$elm$html$Html$button,
 				_List_fromArray(

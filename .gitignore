@@ -1,6 +1,7 @@
 .DS_STORE
 extra_images
 .env
+/elm/elm-stuff
 
 # Logs
 logs
