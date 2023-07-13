@@ -170,25 +170,25 @@ initialColorVariables list =
         list
 
 
-view : Model Config -> Html Msg
+view : Model -> Html Msg
 view model =
     div []
         [ Keyed.node "style"
-            [ id (String.fromInt model.iteration) ]
-            [ ( String.fromInt model.iteration
-              , Html.text model.styleString
+            [ id (String.fromInt model.newImage.iteration ++ "-" ++ String.fromInt model.oldImage.iteration) ]
+            [ ( String.fromInt model.newImage.iteration ++ "-" ++ String.fromInt model.oldImage.iteration
+              , Html.text (model.oldImage.styleString ++ model.newImage.styleString)
               )
             ]
         , Html.node "style"
             []
             [ Html.text
                 (initialColorVariables
-                    model.initialVariables
+                    model.newImage.initialVariables
                     |> toStyleString "#new"
                 )
             , Html.text
                 (initialColorVariables
-                    model.oldInitialVariables
+                    model.oldImage.initialVariables
                     |> toStyleString "#old"
                 )
             , Html.text
@@ -197,19 +197,18 @@ view model =
                 )
             ]
         , Keyed.node "div"
-            [ onClick Randomize ]
-            [ ( String.fromInt model.level
-              , div [ id "new" ] [ lazy3 frameWork model.level "path" "outer" ]
+            [ id "container", onClick Randomize ]
+            [ ( String.fromInt model.newImage.level
+              , div [ id "new" ] [ lazy3 frameWork model.newImage.level "path" "outer" ]
               )
-            , ( String.fromInt model.level
-              , div [ id "old", onTransitionEnd ] [ lazy3 frameWork model.level "path" "outer" ]
+            , ( String.fromInt model.oldImage.level
+              , div [ id "old" ] [ lazy3 frameWork model.oldImage.level "path" "outer" ]
               )
             ]
-
-        -- , button [ onClick Randomize ] [ text "Random" ]
-        -- , button [ onClick (ChangeLevel (model.level - 1)) ] [ Html.text "- level" ]
-        -- , button [ onClick (ChangeLevel (model.level + 1)) ] [ Html.text "+ level" ]
-        -- , button [ onClick ChangeStartColor ] [ Html.text "Change start color" ]
+        , button [ onClick Randomize ] [ text "Random" ]
+        , button [ onClick (ChangeLevel -1) ] [ Html.text "- level" ]
+        , button [ onClick (ChangeLevel 1) ] [ Html.text "+ level" ]
+        , button [ onClick ChangeStartColor ] [ Html.text "Change start color" ]
         ]
 
 
@@ -217,14 +216,19 @@ view model =
 --
 
 
-type alias Model config =
+type alias Fraquilt =
     { iteration : Int
     , styleString : String
-    , adjustments : Adjustments config
+    , adjustments : Adjustments Config
     , level : Int
-    , initialVariables : config
+    , initialVariables : Config
+    }
+
+
+type alias Model =
+    { newImage : Fraquilt
+    , oldImage : Fraquilt
     , oldVarOpacity : Int
-    , oldInitialVariables : config
     , randomSeed : Random.Seed
     , numberOfVariables : Int -- Length of list
     }
@@ -234,7 +238,7 @@ type alias Flags =
     { randomSeed : Int }
 
 
-init : Flags -> ( Model Config, Cmd Msg )
+init : Flags -> ( Model, Cmd Msg )
 init flags =
     let
         numberOfVariables =
@@ -251,21 +255,27 @@ init flags =
 
         ( newInitialColor, seedAfterColor ) =
             Random.step (randomizeColor numberOfVariables) seedAfterAdustments
+
+        initImage : Fraquilt
+        initImage =
+            { iteration = 0
+            , styleString =
+                bottomConfigValues adjustments level (List.range 0 (numberOfVariables - 1))
+                    |> mapStylesToStringTCO rgbToStyles
+            , adjustments = adjustments
+            , level = level
+            , initialVariables = newInitialColor |> Debug.log "init color"
+            }
     in
-    ( { iteration = 0
-      , styleString =
-            bottomConfigValues adjustments level (List.range 0 (numberOfVariables - 1))
-                |> mapStylesToStringTCO rgbToStyles
-      , adjustments = adjustments
-      , level = level
-      , initialVariables = newInitialColor |> Debug.log "init color"
+    ( { newImage = initImage
+      , oldImage = initImage
       , oldVarOpacity = 1
-      , oldInitialVariables = newInitialColor
       , randomSeed = seedAfterColor
       , numberOfVariables = numberOfVariables
       }
-    , Process.sleep 1000
-        |> Task.perform (\_ -> ChangeStartColor)
+    , Cmd.none
+      -- , Process.sleep 1000
+      --     |> Task.perform (\_ -> ChangeStartColor)
     )
 
 
@@ -275,17 +285,17 @@ type Msg
     | ChangeStartColor
 
 
-update : Msg -> Model Config -> ( Model Config, Cmd msg )
+update : Msg -> Model -> ( Model, Cmd msg )
 update msg model =
     let
-        recalcConfigs updatedModel =
-            { updatedModel
-                | iteration = model.iteration + 1
+        recalcConfigs image =
+            { image
+                | iteration = image.iteration + 1
                 , styleString =
                     bottomConfigValues
-                        updatedModel.adjustments
-                        updatedModel.level
-                        (List.range 0 (updatedModel.numberOfVariables - 1))
+                        image.adjustments
+                        image.level
+                        (List.range 0 (model.numberOfVariables - 1))
                         |> mapStylesToStringTCO rgbToStyles
                         |> (\x ->
                                 let
@@ -295,72 +305,88 @@ update msg model =
                                 x
                            )
             }
+
+        updateImage : (Fraquilt -> ( Fraquilt, Random.Seed )) -> Model
+        updateImage f =
+            if model.oldVarOpacity == 1 then
+                let
+                    ( updatedImage, newSeed ) =
+                        f model.oldImage
+                in
+                { model
+                    | newImage = updatedImage
+                    , oldVarOpacity = 0
+                    , randomSeed = newSeed
+                }
+
+            else
+                let
+                    ( updatedImage, newSeed ) =
+                        f model.newImage
+                in
+                { model
+                    | oldVarOpacity = 1
+                    , oldImage = updatedImage
+                    , randomSeed = newSeed
+                }
     in
     case msg of
         Randomize ->
             let
-                _ =
-                    Debug.log "randomize" ()
+                updateImageFunc =
+                    \image ->
+                        let
+                            _ =
+                                Debug.log "randomize" ()
 
-                ( randomizedAdjustments, seedAfterAdustments ) =
-                    Random.step (randomizeAdjustments model.numberOfVariables) model.randomSeed
+                            ( randomizedAdjustments, seedAfterAdustments ) =
+                                Random.step (randomizeAdjustments model.numberOfVariables) model.randomSeed
 
-                ( newInitialColor, newSeed ) =
-                    Random.step (randomizeColor model.numberOfVariables) seedAfterAdustments
+                            -- ( newInitialColor, newSeed ) =
+                            --     Random.step (randomizeColor model.numberOfVariables) seedAfterAdustments
+                        in
+                        ( { image
+                            | adjustments = randomizedAdjustments
+
+                            -- , initialVariables = newInitialColor
+                          }
+                            |> recalcConfigs
+                        , seedAfterAdustments
+                        )
             in
-            ( { model
-                | adjustments = randomizedAdjustments
-                , randomSeed = newSeed
-                , initialVariables = newInitialColor
-              }
-                |> recalcConfigs
+            ( updateImage updateImageFunc
             , Cmd.none
             )
 
         ChangeStartColor ->
             let
-                randomizeVariables vars =
-                    Random.step
-                        (Random.map2
-                            (\index add -> List.setAt index add vars)
-                            (Random.int 0
-                                (model.numberOfVariables - 1)
-                            )
-                            (Random.int 0 255)
-                        )
-                        model.randomSeed
+                updateImageFunc image =
+                    let
+                        ( newColor, newSeed ) =
+                            Random.step
+                                (Random.map2
+                                    (\index add -> List.setAt index add image.initialVariables)
+                                    (Random.int 0
+                                        (model.numberOfVariables - 1)
+                                    )
+                                    (Random.int 0 255)
+                                )
+                                model.randomSeed
+                    in
+                    ( { image | initialVariables = newColor }, newSeed )
             in
-            if model.oldVarOpacity == 1 then
-                let
-                    ( newColor, newSeed ) =
-                        randomizeVariables model.oldInitialVariables
-                in
-                ( { model
-                    | initialVariables = newColor
-                    , oldVarOpacity = 0
-                    , randomSeed = newSeed
-                  }
-                , Cmd.none
-                )
-
-            else
-                let
-                    ( newColor, newSeed ) =
-                        randomizeVariables model.initialVariables
-                in
-                ( { model
-                    | oldVarOpacity = 1
-                    , oldInitialVariables = newColor
-                    , randomSeed = newSeed
-                  }
-                , Cmd.none
-                )
+            ( updateImage updateImageFunc, Cmd.none )
 
         ChangeLevel i ->
-            ( { model
-                | level = i
-              }
-                |> recalcConfigs
+            ( updateImage
+                (\image ->
+                    ( { image
+                        | level = image.level + i
+                      }
+                        |> recalcConfigs
+                    , model.randomSeed
+                    )
+                )
             , Cmd.none
             )
 
@@ -370,7 +396,7 @@ onTransitionEnd =
     Html.Events.on "transitionend" (Json.Decode.succeed ChangeStartColor)
 
 
-main : Program Flags (Model Config) Msg
+main : Program Flags Model Msg
 main =
     Browser.element
         { init = init

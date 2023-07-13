@@ -12,19 +12,30 @@ div {
     background-color: rgb(var(--var-0), var(--var-1), var(--var-2));
 }
 
+#container {
+    position: relative;
+    width: 400px;
+    height: 400px;
+}
+
 #new {
     position: absolute;
     top: 0;
     left: 0;
+    right: 0;
+    bottom: 0;
 }
+
 
 #old {
     position: absolute;
     top: 0;
     left: 0;
+    right: 0;
+    bottom: 0;
     opacity: var(--old-opacity);
     will-change: opacity;
-    transition: opacity 1s linear;
+    transition: opacity 1s linear 0.5s;
 }
 
 .tl {
@@ -49,6 +60,6 @@ div {
 
 .outer {
     position: relative;
-    height: 100vh;
-    width: 100vw;
+    height: 100%;
+    width: 100%;
 }
