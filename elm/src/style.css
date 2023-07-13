@@ -10,6 +10,7 @@ div {
 
 .inner {
     background-color: rgb(var(--var-0), var(--var-1), var(--var-2));
+    transition: background-color 3s ease-in-out;
 }
 
 .tl {

@@ -9,6 +9,7 @@ import Html.Keyed as Keyed
 import Html.Lazy exposing (lazy3)
 import List.Extra as List
 import Random
+import Time
 
 
 type alias Adjustments a =
@@ -191,7 +192,10 @@ view model =
                         model.configs
                     )
               )
-            , ( String.join "-" (List.map String.fromInt model.initConfig)
+            ]
+        , Keyed.node "style"
+            []
+            [ ( String.join "-" (List.map String.fromInt model.initConfig)
               , Html.text
                     (initialColorVariables
                         model.initConfig
@@ -205,6 +209,7 @@ view model =
         , button [ onClick Randomize ] [ text "Random" ]
         , button [ onClick (ChangeLevel (model.level - 1)) ] [ Html.text "- level" ]
         , button [ onClick (ChangeLevel (model.level + 1)) ] [ Html.text "+ level" ]
+        , button [ onClick ChangeStartColor ] [ Html.text "Change start color" ]
         ]
 
 
@@ -260,6 +265,7 @@ init flags =
 type Msg
     = Randomize
     | ChangeLevel Int
+    | ChangeStartColor
 
 
 update : Msg -> Model Config -> ( Model Config, Cmd msg )
@@ -293,6 +299,18 @@ update msg model =
             , Cmd.none
             )
 
+        ChangeStartColor ->
+            let
+                ( newInitialColor, newSeed ) =
+                    Random.step (randomizeColor model.numberOfVariables) model.randomSeed
+            in
+            ( { model
+                | randomSeed = newSeed
+                , initConfig = newInitialColor
+              }
+            , Cmd.none
+            )
+
         ChangeLevel i ->
             ( { model
                 | level = i
@@ -308,5 +326,5 @@ main =
         { init = init
         , view = view
         , update = update
-        , subscriptions = \_ -> Sub.none
+        , subscriptions = \_ -> Time.every 3000 (\_ -> ChangeStartColor)
         }
