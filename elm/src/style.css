@@ -9,7 +9,7 @@ div {
 }
 
 .inner {
-    background: rgb(var(--var-0), var(--var-1), var(--var-2));
+    background-color: rgb(var(--var-0), var(--var-1), var(--var-2));
 }
 
 #new {

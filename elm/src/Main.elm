@@ -1,14 +1,18 @@
 module Main exposing (..)
 
 import Browser
+import Browser.Events
 import Dict exposing (Dict)
 import Html exposing (Html, b, button, div, input, main_, text)
 import Html.Attributes exposing (class, id, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Html.Keyed as Keyed
 import Html.Lazy exposing (lazy3)
+import Json.Decode
 import List.Extra as List
+import Process
 import Random
+import Task
 import Time
 
 
@@ -202,13 +206,14 @@ view model =
               , div [ id "new" ] [ lazy3 frameWork model.level "path" "outer" ]
               )
             , ( String.fromInt model.level
-              , div [ id "old" ] [ lazy3 frameWork model.level "path" "outer" ]
+              , div [ id "old", onTransitionEnd ] [ lazy3 frameWork model.level "path" "outer" ]
               )
             ]
-        , button [ onClick Randomize ] [ text "Random" ]
-        , button [ onClick (ChangeLevel (model.level - 1)) ] [ Html.text "- level" ]
-        , button [ onClick (ChangeLevel (model.level + 1)) ] [ Html.text "+ level" ]
-        , button [ onClick ChangeStartColor ] [ Html.text "Change start color" ]
+
+        -- , button [ onClick Randomize ] [ text "Random" ]
+        -- , button [ onClick (ChangeLevel (model.level - 1)) ] [ Html.text "- level" ]
+        -- , button [ onClick (ChangeLevel (model.level + 1)) ] [ Html.text "+ level" ]
+        -- , button [ onClick ChangeStartColor ] [ Html.text "Change start color" ]
         ]
 
 
@@ -240,7 +245,7 @@ init flags =
             10
 
         level =
-            7
+            8
 
         seed =
             Random.initialSeed flags.randomSeed
@@ -261,7 +266,8 @@ init flags =
       , randomSeed = seedAfterColor
       , numberOfVariables = numberOfVariables
       }
-    , Cmd.none
+    , Process.sleep 1000
+        |> Task.perform (\_ -> ChangeStartColor)
     )
 
 
@@ -304,29 +310,42 @@ update msg model =
 
         ChangeStartColor ->
             let
-                swapTwoVars m =
-                    if m.oldVarOpacity == 1 then
-                        { m
-                            | initialVariables = newInitialColor
-                            , oldVarOpacity = 0
-                        }
-
-                    else
-                        { m
-                            | oldVarOpacity = 1
-                            , oldInitialVariables = newInitialColor
-                        }
-
-                ( newInitialColor, newSeed ) =
-                    Random.step (randomizeColor model.numberOfVariables)
+                randomizeVariables vars =
+                    Random.step
+                        (Random.map2
+                            (\index add -> List.setAt index add vars)
+                            (Random.int 0
+                                (model.numberOfVariables - 1)
+                            )
+                            (Random.int 0 255)
+                        )
                         model.randomSeed
             in
-            ( { model
-                | randomSeed = newSeed
-              }
-                |> swapTwoVars
-            , Cmd.none
-            )
+            if model.oldVarOpacity == 1 then
+                let
+                    ( newColor, newSeed ) =
+                        randomizeVariables model.oldInitialVariables
+                in
+                ( { model
+                    | initialVariables = newColor
+                    , oldVarOpacity = 0
+                    , randomSeed = newSeed
+                  }
+                , Cmd.none
+                )
+
+            else
+                let
+                    ( newColor, newSeed ) =
+                        randomizeVariables model.initialVariables
+                in
+                ( { model
+                    | oldVarOpacity = 1
+                    , oldInitialVariables = newColor
+                    , randomSeed = newSeed
+                  }
+                , Cmd.none
+                )
 
         ChangeLevel i ->
             ( { model
@@ -337,11 +356,16 @@ update msg model =
             )
 
 
+onTransitionEnd : Html.Attribute Msg
+onTransitionEnd =
+    Html.Events.on "transitionend" (Json.Decode.succeed ChangeStartColor)
+
+
 main : Program Flags (Model Config) Msg
 main =
     Browser.element
         { init = init
         , view = view
         , update = update
-        , subscriptions = \_ -> Time.every 5000 (\_ -> ChangeStartColor)
+        , subscriptions = \_ -> Sub.none
         }
