@@ -49,7 +49,7 @@ bottomConfigValues adjustments level_ config_ =
     helper "#path" level_ config_ []
 
 
-mapStylesToStringTCO : (config -> Bool -> List Style) -> List ( String, config ) -> String
+mapStylesToStringTCO : (config -> List Style) -> List ( String, config ) -> String
 mapStylesToStringTCO getStyles configValueList =
     let
         helper : List ( String, config ) -> String -> String
@@ -61,10 +61,7 @@ mapStylesToStringTCO getStyles configValueList =
                 ( pathKey, config ) :: rest ->
                     helper
                         rest
-                        (toStyleString pathKey (getStyles config False)
-                            ++ toStyleString (pathKey ++ "-old") (getStyles config True)
-                            ++ soFar
-                        )
+                        (toStyleString pathKey (getStyles config) ++ soFar)
     in
     helper configValueList ""
 
@@ -82,7 +79,7 @@ frameWork level pathKey currentPosition =
     if level == 0 then
         div
             [ class "box inner", class currentPosition, id pathKey ]
-            [ div [ class "old-inner", class currentPosition, id (pathKey ++ "-old") ] [] ]
+            []
 
     else
         div [ class "box", class currentPosition ]
@@ -147,55 +144,26 @@ randomizeColor n =
     Random.list n (Random.int 0 255)
 
 
-rgbToStyles : Config -> Bool -> List Style
-rgbToStyles list isOld =
+rgbToStyles : Config -> List Style
+rgbToStyles list =
     list
         |> List.indexedMap
             (\variable initialVar ->
-                ( "--"
-                    ++ addOldPrefix isOld
-                    ++ "var-"
-                    ++ String.fromInt variable
-                , "var(--"
-                    ++ addOldPrefix isOld
-                    ++ "initial-var-"
-                    ++ String.fromInt initialVar
-                    ++ ")"
+                ( "--var-" ++ String.fromInt variable
+                , "var(--initial-var-" ++ String.fromInt initialVar ++ ")"
                 )
             )
 
 
-addOldPrefix : Bool -> String
-addOldPrefix isOld =
-    if isOld then
-        "old-"
-
-    else
-        ""
-
-
-initialColorVariables : Config -> Bool -> List Style
-initialColorVariables list isOld =
+initialColorVariables : Config -> List Style
+initialColorVariables list =
     List.indexedMap
         (\variable value ->
-            ( "--"
-                ++ addOldPrefix isOld
-                ++ "initial-var-"
-                ++ String.fromInt variable
+            ( "--initial-var-" ++ String.fromInt variable
             , String.fromInt value
             )
         )
         list
-
-
-
--- [ ( "background-color"
---   , "rgb("
---         ++ String.join ","
---             [ String.fromInt r, String.fromInt g, String.fromInt b ]
---         ++ ")"
---   )
--- ]
 
 
 view : Model Config -> Html Msg
@@ -216,17 +184,27 @@ view model =
             [ Html.text
                 (initialColorVariables
                     model.initialVariables
-                    False
-                    ++ initialColorVariables
-                        model.oldInitialVariables
-                        True
-                    ++ [ ( "--old-opacity", model.oldVarOpacity |> String.fromInt ) ]
+                    |> toStyleString "#new"
+                )
+            , Html.text
+                (initialColorVariables
+                    model.oldInitialVariables
+                    |> toStyleString "#old"
+                )
+            , Html.text
+                ([ ( "--old-opacity", model.oldVarOpacity |> String.fromInt ) ]
                     |> toStyleString ":root"
                 )
             ]
         , Keyed.node "div"
-            []
-            [ ( String.fromInt model.level, lazy3 frameWork model.level "path" "outer" ) ]
+            [ onClick Randomize ]
+            [ ( String.fromInt model.level
+              , div [ id "new" ] [ lazy3 frameWork model.level "path" "outer" ]
+              )
+            , ( String.fromInt model.level
+              , div [ id "old" ] [ lazy3 frameWork model.level "path" "outer" ]
+              )
+            ]
         , button [ onClick Randomize ] [ text "Random" ]
         , button [ onClick (ChangeLevel (model.level - 1)) ] [ Html.text "- level" ]
         , button [ onClick (ChangeLevel (model.level + 1)) ] [ Html.text "+ level" ]
@@ -365,5 +343,5 @@ main =
         { init = init
         , view = view
         , update = update
-        , subscriptions = \_ -> Sub.none --Time.every 3000 (\_ -> ChangeStartColor)
+        , subscriptions = \_ -> Time.every 5000 (\_ -> ChangeStartColor)
         }
