@@ -176,11 +176,7 @@ view model =
         [ Keyed.node "style"
             [ id (String.fromInt model.iteration) ]
             [ ( String.fromInt model.iteration
-              , Html.text
-                    (mapStylesToStringTCO
-                        rgbToStyles
-                        model.configs
-                    )
+              , Html.text model.styleString
               )
             ]
         , Html.node "style"
@@ -223,7 +219,7 @@ view model =
 
 type alias Model config =
     { iteration : Int
-    , configs : List ( String, config )
+    , styleString : String
     , adjustments : Adjustments config
     , level : Int
     , initialVariables : config
@@ -245,7 +241,7 @@ init flags =
             10
 
         level =
-            8
+            7
 
         seed =
             Random.initialSeed flags.randomSeed
@@ -257,7 +253,9 @@ init flags =
             Random.step (randomizeColor numberOfVariables) seedAfterAdustments
     in
     ( { iteration = 0
-      , configs = bottomConfigValues adjustments level (List.range 0 (numberOfVariables - 1))
+      , styleString =
+            bottomConfigValues adjustments level (List.range 0 (numberOfVariables - 1))
+                |> mapStylesToStringTCO rgbToStyles
       , adjustments = adjustments
       , level = level
       , initialVariables = newInitialColor |> Debug.log "init color"
@@ -283,16 +281,27 @@ update msg model =
         recalcConfigs updatedModel =
             { updatedModel
                 | iteration = model.iteration + 1
-                , configs =
+                , styleString =
                     bottomConfigValues
                         updatedModel.adjustments
                         updatedModel.level
                         (List.range 0 (updatedModel.numberOfVariables - 1))
+                        |> mapStylesToStringTCO rgbToStyles
+                        |> (\x ->
+                                let
+                                    _ =
+                                        Debug.log "newStyles" ()
+                                in
+                                x
+                           )
             }
     in
     case msg of
         Randomize ->
             let
+                _ =
+                    Debug.log "randomize" ()
+
                 ( randomizedAdjustments, seedAfterAdustments ) =
                     Random.step (randomizeAdjustments model.numberOfVariables) model.randomSeed
 
