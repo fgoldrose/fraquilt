@@ -49,7 +49,7 @@ bottomConfigValues adjustments level_ config_ =
     helper "#path" level_ config_ []
 
 
-mapStylesToStringTCO : (config -> List Style) -> List ( String, config ) -> String
+mapStylesToStringTCO : (config -> Bool -> List Style) -> List ( String, config ) -> String
 mapStylesToStringTCO getStyles configValueList =
     let
         helper : List ( String, config ) -> String -> String
@@ -61,7 +61,10 @@ mapStylesToStringTCO getStyles configValueList =
                 ( pathKey, config ) :: rest ->
                     helper
                         rest
-                        (toStyleString pathKey (getStyles config) ++ soFar)
+                        (toStyleString pathKey (getStyles config False)
+                            ++ toStyleString (pathKey ++ "-old") (getStyles config True)
+                            ++ soFar
+                        )
     in
     helper configValueList ""
 
@@ -79,7 +82,7 @@ frameWork level pathKey currentPosition =
     if level == 0 then
         div
             [ class "box inner", class currentPosition, id pathKey ]
-            []
+            [ div [ class "old-inner", class currentPosition, id (pathKey ++ "-old") ] [] ]
 
     else
         div [ class "box", class currentPosition ]
@@ -144,22 +147,41 @@ randomizeColor n =
     Random.list n (Random.int 0 255)
 
 
-rgbToStyles : Config -> List Style
-rgbToStyles list =
+rgbToStyles : Config -> Bool -> List Style
+rgbToStyles list isOld =
     list
         |> List.indexedMap
             (\variable initialVar ->
-                ( "--var-" ++ String.fromInt variable
-                , "var(--initial-var-" ++ String.fromInt initialVar ++ ")"
+                ( "--"
+                    ++ addOldPrefix isOld
+                    ++ "var-"
+                    ++ String.fromInt variable
+                , "var(--"
+                    ++ addOldPrefix isOld
+                    ++ "initial-var-"
+                    ++ String.fromInt initialVar
+                    ++ ")"
                 )
             )
 
 
-initialColorVariables : Config -> List Style
-initialColorVariables list =
+addOldPrefix : Bool -> String
+addOldPrefix isOld =
+    if isOld then
+        "old-"
+
+    else
+        ""
+
+
+initialColorVariables : Config -> Bool -> List Style
+initialColorVariables list isOld =
     List.indexedMap
         (\variable value ->
-            ( "--initial-var-" ++ String.fromInt variable
+            ( "--"
+                ++ addOldPrefix isOld
+                ++ "initial-var-"
+                ++ String.fromInt variable
             , String.fromInt value
             )
         )
@@ -178,10 +200,6 @@ initialColorVariables list =
 
 view : Model Config -> Html Msg
 view model =
-    let
-        _ =
-            Debug.log "View for level:" model.level
-    in
     div []
         [ Keyed.node "style"
             [ id (String.fromInt model.iteration) ]
@@ -193,15 +211,18 @@ view model =
                     )
               )
             ]
-        , Keyed.node "style"
+        , Html.node "style"
             []
-            [ ( String.join "-" (List.map String.fromInt model.initConfig)
-              , Html.text
-                    (initialColorVariables
-                        model.initConfig
-                        |> toStyleString ":root"
-                    )
-              )
+            [ Html.text
+                (initialColorVariables
+                    model.initialVariables
+                    False
+                    ++ initialColorVariables
+                        model.oldInitialVariables
+                        True
+                    ++ [ ( "--old-opacity", model.oldVarOpacity |> String.fromInt ) ]
+                    |> toStyleString ":root"
+                )
             ]
         , Keyed.node "div"
             []
@@ -222,7 +243,9 @@ type alias Model config =
     , configs : List ( String, config )
     , adjustments : Adjustments config
     , level : Int
-    , initConfig : config
+    , initialVariables : config
+    , oldVarOpacity : Int
+    , oldInitialVariables : config
     , randomSeed : Random.Seed
     , numberOfVariables : Int -- Length of list
     }
@@ -254,7 +277,9 @@ init flags =
       , configs = bottomConfigValues adjustments level (List.range 0 (numberOfVariables - 1))
       , adjustments = adjustments
       , level = level
-      , initConfig = newInitialColor |> Debug.log "init color"
+      , initialVariables = newInitialColor |> Debug.log "init color"
+      , oldVarOpacity = 1
+      , oldInitialVariables = newInitialColor
       , randomSeed = seedAfterColor
       , numberOfVariables = numberOfVariables
       }
@@ -293,7 +318,7 @@ update msg model =
             ( { model
                 | adjustments = randomizedAdjustments
                 , randomSeed = newSeed
-                , initConfig = newInitialColor
+                , initialVariables = newInitialColor
               }
                 |> recalcConfigs
             , Cmd.none
@@ -301,13 +326,27 @@ update msg model =
 
         ChangeStartColor ->
             let
+                swapTwoVars m =
+                    if m.oldVarOpacity == 1 then
+                        { m
+                            | initialVariables = newInitialColor
+                            , oldVarOpacity = 0
+                        }
+
+                    else
+                        { m
+                            | oldVarOpacity = 1
+                            , oldInitialVariables = newInitialColor
+                        }
+
                 ( newInitialColor, newSeed ) =
-                    Random.step (randomizeColor model.numberOfVariables) model.randomSeed
+                    Random.step (randomizeColor model.numberOfVariables)
+                        model.randomSeed
             in
             ( { model
                 | randomSeed = newSeed
-                , initConfig = newInitialColor
               }
+                |> swapTwoVars
             , Cmd.none
             )
 
@@ -326,5 +365,5 @@ main =
         { init = init
         , view = view
         , update = update
-        , subscriptions = \_ -> Time.every 3000 (\_ -> ChangeStartColor)
+        , subscriptions = \_ -> Sub.none --Time.every 3000 (\_ -> ChangeStartColor)
         }
