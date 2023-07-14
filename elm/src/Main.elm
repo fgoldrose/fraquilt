@@ -143,8 +143,8 @@ randomizeAdjustments listLength =
         randomList
 
 
-randomizeColor : Int -> Random.Generator Config
-randomizeColor n =
+randomVariables : Int -> Random.Generator Config
+randomVariables n =
     Random.list n (Random.int 0 255)
 
 
@@ -261,7 +261,7 @@ init flags =
             Random.step (randomizeAdjustments numberOfVariables) seed
 
         ( newInitialColor, seedAfterColor ) =
-            Random.step (randomizeColor numberOfVariables) seedAfterAdustments
+            Random.step (randomVariables numberOfVariables) seedAfterAdustments
 
         initImage : Fraquilt
         initImage =
@@ -297,143 +297,90 @@ type Msg
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    let
-        recalcConfigs image =
-            { image
-                | iteration = image.iteration + 1
-                , styleString =
-                    bottomConfigValues
-                        image.adjustments
-                        image.level
-                        (List.range 0 (model.numberOfVariables - 1))
-                        |> mapStylesToStringTCO rgbToStyles
-                        |> (\x ->
-                                let
-                                    _ =
-                                        Debug.log "newStyles" ()
-                                in
-                                x
-                           )
-            }
-
-        updateImage : (Fraquilt -> ( Fraquilt, Model )) -> Model
-        updateImage f =
-            if model.oldVarOpacity == 1 then
-                let
-                    ( updatedImage, newModel ) =
-                        f model.oldImage
-                in
-                { newModel
-                    | newImage = updatedImage
-                    , oldVarOpacity = 0
-                }
-
-            else
-                let
-                    ( updatedImage, newModel ) =
-                        f model.newImage
-                in
-                { newModel
-                    | oldVarOpacity = 1
-                    , oldImage = updatedImage
-                }
-    in
     case msg of
         Randomize ->
             let
-                updateImageFunc =
-                    \image ->
-                        let
-                            _ =
-                                Debug.log "randomize" ()
-
-                            ( randomizedAdjustments, seedAfterAdustments ) =
-                                Random.step (randomizeAdjustments model.numberOfVariables) model.randomSeed
-
-                            -- ( newInitialColor, newSeed ) =
-                            --     Random.step (randomizeColor model.numberOfVariables) seedAfterAdustments
-                        in
-                        ( { image
-                            | adjustments = randomizedAdjustments
-
-                            -- , initialVariables = newInitialColor
-                          }
-                            |> recalcConfigs
-                        , { model
-                            | randomSeed = seedAfterAdustments
-                          }
-                        )
+                ( updateRandomize, newSeed ) =
+                    randomizeImage model.numberOfVariables model.randomSeed
             in
-            ( updateImage updateImageFunc
+            ( { model | randomSeed = newSeed }
+                |> updateImage updateRandomize
             , Cmd.none
             )
 
         ChangeStartColor ->
             let
+                ( updateVars, newSeed ) =
+                    Random.step
+                        (Random.map2
+                            (\index add -> List.setAt index add)
+                            (Random.int 0
+                                (model.numberOfVariables - 1)
+                            )
+                            (Random.int 0 255)
+                        )
+                        model.randomSeed
+
                 updateImageFunc image =
-                    let
-                        ( newColor, newSeed ) =
-                            Random.step
-                                (Random.map2
-                                    (\index add -> List.setAt index add image.initialVariables)
-                                    (Random.int 0
-                                        (model.numberOfVariables - 1)
-                                    )
-                                    (Random.int 0 255)
-                                )
-                                model.randomSeed
-                    in
-                    ( { image | initialVariables = newColor }
-                    , { model | randomSeed = newSeed }
-                    )
+                    { image | initialVariables = updateVars image.initialVariables }
             in
-            ( updateImage updateImageFunc, Cmd.none )
+            ( { model | randomSeed = newSeed }
+                |> updateImage updateImageFunc
+            , Cmd.none
+            )
 
         AnimateLevel ->
-            ( updateImage
-                (\image ->
-                    case model.levelAnimationDirection of
-                        Up ->
-                            if image.level == 7 then
-                                ( { image
-                                    | level = image.level - 1
-                                  }
-                                    |> recalcConfigs
-                                , { model | levelAnimationDirection = Down }
-                                )
+            let
+                currentImage =
+                    getCurrentImage model
 
-                            else
-                                ( { image | level = image.level + 1 }
-                                    |> recalcConfigs
-                                , model
-                                )
+                ( randomizeFunc, newSeed ) =
+                    randomizeImage model.numberOfVariables model.randomSeed
 
-                        Down ->
-                            if image.level == 0 then
-                                ( { image | level = image.level + 1 }
-                                    |> recalcConfigs
-                                , { model | levelAnimationDirection = Up }
-                                )
+                newModel =
+                    if currentImage.level == 7 then
+                        { model
+                            | levelAnimationDirection = Down
+                            , randomSeed = newSeed
+                        }
 
-                            else
-                                ( { image | level = image.level - 1 }
+                    else if currentImage.level == 0 then
+                        { model
+                            | levelAnimationDirection = Up
+                            , randomSeed = newSeed
+                        }
+
+                    else
+                        model
+            in
+            ( newModel
+                |> updateImage
+                    (\image ->
+                        case newModel.levelAnimationDirection of
+                            Up ->
+                                if model.levelAnimationDirection == Up then
+                                    { image | level = image.level + 1 }
+                                        |> recalcConfigs
+
+                                else
+                                    randomizeFunc image
+
+                            Down ->
+                                { image | level = image.level - 1 }
                                     |> recalcConfigs
-                                , model
-                                )
-                )
+                    )
             , Cmd.none
             )
 
         ChangeLevel i ->
-            ( updateImage
-                (\image ->
-                    ( { image
-                        | level = image.level + i
-                      }
-                        |> recalcConfigs
-                    , model
+            ( model
+                |> updateImage
+                    (\image ->
+                        { image
+                            | level = image.level + i
+                        }
+                            |> recalcConfigs
                     )
-                )
             , Cmd.none
             )
 
@@ -454,6 +401,80 @@ update msg model =
 
                 _ ->
                     ( model, Cmd.none )
+
+
+getCurrentImage : Model -> Fraquilt
+getCurrentImage model =
+    if model.oldVarOpacity == 1 then
+        model.oldImage
+
+    else
+        model.newImage
+
+
+updateImage : (Fraquilt -> Fraquilt) -> Model -> Model
+updateImage f model =
+    if model.oldVarOpacity == 1 then
+        let
+            updatedImage =
+                f model.oldImage
+        in
+        { model
+            | newImage = updatedImage
+            , oldVarOpacity = 0
+        }
+
+    else
+        let
+            updatedImage =
+                f model.newImage
+        in
+        { model
+            | oldVarOpacity = 1
+            , oldImage = updatedImage
+        }
+
+
+recalcConfigs : Fraquilt -> Fraquilt
+recalcConfigs image =
+    { image
+        | iteration = image.iteration + 1
+        , styleString =
+            bottomConfigValues
+                image.adjustments
+                image.level
+                (List.range 0 (List.length image.initialVariables - 1))
+                |> mapStylesToStringTCO rgbToStyles
+                |> (\x ->
+                        let
+                            _ =
+                                Debug.log "newStyles" ()
+                        in
+                        x
+                   )
+    }
+
+
+randomizeImage : Int -> Random.Seed -> ( Fraquilt -> Fraquilt, Random.Seed )
+randomizeImage numberOfVariables randomSeed =
+    let
+        _ =
+            Debug.log "randomize" ()
+
+        ( randomizedAdjustments, seedAfterAdustments ) =
+            Random.step (randomizeAdjustments numberOfVariables) randomSeed
+
+        ( newInitialColor, newSeed ) =
+            Random.step (randomVariables numberOfVariables) seedAfterAdustments
+    in
+    ( \image ->
+        { image
+            | adjustments = randomizedAdjustments
+            , initialVariables = newInitialColor
+        }
+            |> recalcConfigs
+    , newSeed
+    )
 
 
 onTransitionEnd : Msg -> Html.Attribute Msg
