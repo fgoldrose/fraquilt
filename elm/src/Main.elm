@@ -263,6 +263,11 @@ viewFrameworks model =
                         , Html.Attributes.style "bottom" "0"
                         , Html.Attributes.style "right" "0"
                         , Html.Attributes.style "left" "0"
+                        , if level == 0 then
+                            onTransitionEnd Randomize
+
+                          else
+                            class ""
                         ]
                         [ Html.Lazy.lazy5 withInline
                             model.newImage.adjustments
@@ -304,7 +309,11 @@ view model =
           -- ]
           div
             [ id "container"
-            , onClick AnimateLevel
+            , if model.newImage.level == maxLevel then
+                onClick AnimateLevel
+
+              else
+                class ""
             ]
             [ viewFrameworks model ]
 
@@ -384,8 +393,8 @@ init flags =
       , oldVarOpacity = 1
       , randomSeed = seedAfterColor
       , numberOfVariables = numberOfVariables
-      , levelAnimationDirection = None
-      , doNextAnimationFrame = []
+      , levelAnimationDirection = Up
+      , doNextAnimationFrame = [ AnimateLevel ]
       }
     , Cmd.none
     )
@@ -402,20 +411,23 @@ type Msg
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    let
-        _ =
-            Debug.log "level" ( msg, model.newImage.level )
-    in
     case msg of
         Randomize ->
-            let
-                ( updateRandomize, newSeed ) =
-                    randomizeImage model.numberOfVariables model.randomSeed
-            in
-            ( { model | randomSeed = newSeed }
-                |> updateImage updateRandomize
-            , Cmd.none
-            )
+            if model.newImage.level == -1 then
+                let
+                    ( updateRandomize, newSeed ) =
+                        randomizeImage model.numberOfVariables model.randomSeed
+                in
+                ( { model
+                    | randomSeed = newSeed
+                    , doNextAnimationFrame = model.doNextAnimationFrame ++ [ AnimateLevel ]
+                  }
+                    |> updateImage updateRandomize
+                , Cmd.none
+                )
+
+            else
+                ( model, Cmd.none )
 
         ChangeStartColor ->
             let
@@ -454,47 +466,55 @@ update msg model =
                         None ->
                             image
             in
-            ( if currentImage.level == maxLevel then
+            if currentImage.level == maxLevel then
                 if model.levelAnimationDirection == None then
-                    { model
+                    ( { model
                         | levelAnimationDirection = Down
                         , doNextAnimationFrame = model.doNextAnimationFrame ++ [ AnimateLevel ]
-                    }
+                      }
                         |> updateImage (changeLevel Down)
+                    , Cmd.none
+                    )
 
                 else
-                    { model
+                    ( { model
                         | levelAnimationDirection = None
-                    }
+                      }
+                    , Process.sleep 1000
+                        |> Task.perform (\_ -> AnimateLevel)
+                    )
 
-              else if currentImage.level == 0 then
+            else if currentImage.level == -1 then
                 case
                     model.levelAnimationDirection
                 of
                     Down ->
-                        { model
-                            | levelAnimationDirection = None
-                        }
-
-                    None ->
-                        { model
+                        ( { model
                             | levelAnimationDirection = Up
-                            , doNextAnimationFrame = [ Randomize, AnimateLevel ]
-                        }
 
-                    Up ->
-                        { model
-                            | doNextAnimationFrame = model.doNextAnimationFrame ++ [ AnimateLevel ]
-                        }
+                            -- , doNextAnimationFrame = model.doNextAnimationFrame ++ [ Randomize  ]
+                          }
+                          -- , Process.sleep 300
+                          --     |> Task.perform (\_ -> Randomize)
+                        , Cmd.none
+                        )
+
+                    _ ->
+                        ( { model
+                            | levelAnimationDirection = Up
+                            , doNextAnimationFrame = model.doNextAnimationFrame ++ [ AnimateLevel ]
+                          }
                             |> updateImage (changeLevel Up)
+                        , Cmd.none
+                        )
 
-              else
-                { model
+            else
+                ( { model
                     | doNextAnimationFrame = model.doNextAnimationFrame ++ [ AnimateLevel ]
-                }
+                  }
                     |> updateImage (changeLevel model.levelAnimationDirection)
-            , Cmd.none
-            )
+                , Cmd.none
+                )
 
         ChangeLevel i ->
             ( model
@@ -619,11 +639,7 @@ main =
 
                 else
                     Browser.Events.onAnimationFrameDelta
-                        (\x ->
-                            let
-                                _ =
-                                    Debug.log "onAnimationFrameDelta" x
-                            in
+                        (\_ ->
                             GotNextAnimationFrame
                         )
         }
