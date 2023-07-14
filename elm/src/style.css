@@ -6,10 +6,8 @@ div {
     height: 50%;
     width: 50%;
     position: absolute;
-}
-
-.inner {
     background-color: rgb(var(--var-0), var(--var-1), var(--var-2));
+    transition: opacity 1s linear;
 }
 
 #container {

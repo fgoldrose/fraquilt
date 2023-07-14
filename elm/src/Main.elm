@@ -91,7 +91,7 @@ frameWork level pathKey currentPosition =
 
     else
         Keyed.node "div"
-            [ class "box", class currentPosition ]
+            [ class "box", class currentPosition, class ("level-" ++ String.fromInt level), id pathKey ]
             [ ( pathKey ++ "-tl"
               , frameWork
                     (level - 1)
@@ -185,35 +185,52 @@ initialColorVariables list =
 
 viewFrameworks : String -> Direction -> Fraquilt -> Html Msg
 viewFrameworks idString direction image =
-    Keyed.node "div"
+    div
         [ id idString ]
-        (List.range 0 maxLevel
-            |> List.map
-                (\level ->
-                    ( String.fromInt level
-                    , div
-                        [ id ("level-" ++ String.fromInt level)
+        [ div
+            [ -- , onTransitionEnd (AnimateLevel level)
+              -- , Html.Attributes.style "opacity"
+              --     (if level <= image.level then
+              --         "1"
+              --      else
+              --         "0"
+              --     )
+              --, Html.Attributes.style "transition" "opacity 0.1s linear"
+              Html.Attributes.style "position" "absolute"
+            , Html.Attributes.style "top" "0"
+            , Html.Attributes.style "bottom" "0"
+            , Html.Attributes.style "right" "0"
+            , Html.Attributes.style "left" "0"
+            ]
+            [ lazy3 frameWork maxLevel "path" "outer" ]
+        ]
 
-                        -- , onTransitionEnd (AnimateLevel level)
-                        , Html.Attributes.style "opacity"
-                            (if level <= image.level then
-                                "1"
 
-                             else
-                                "0"
-                            )
 
-                        --, Html.Attributes.style "transition" "opacity 0.1s linear"
-                        , Html.Attributes.style "position" "absolute"
-                        , Html.Attributes.style "top" "0"
-                        , Html.Attributes.style "bottom" "0"
-                        , Html.Attributes.style "right" "0"
-                        , Html.Attributes.style "left" "0"
-                        ]
-                        [ lazy3 frameWork level "path" "outer" ]
-                    )
-                )
-        )
+-- (List.range 0 maxLevel
+--     |> List.map
+--         (\level ->
+--             ( String.fromInt level
+--             , div
+--                 [ id ("level-" ++ String.fromInt level)
+--                 -- , onTransitionEnd (AnimateLevel level)
+--                 , Html.Attributes.style "opacity"
+--                     (if level <= image.level then
+--                         "1"
+--                      else
+--                         "0"
+--                     )
+--                 --, Html.Attributes.style "transition" "opacity 0.1s linear"
+--                 , Html.Attributes.style "position" "absolute"
+--                 , Html.Attributes.style "top" "0"
+--                 , Html.Attributes.style "bottom" "0"
+--                 , Html.Attributes.style "right" "0"
+--                 , Html.Attributes.style "left" "0"
+--                 ]
+--                 [ lazy3 frameWork level "path" "outer" ]
+--             )
+--         )
+-- )
 
 
 view : Model -> Html Msg
@@ -240,6 +257,23 @@ view model =
             , Html.text
                 ([ ( "--old-opacity", model.oldVarOpacity |> String.fromInt ) ]
                     |> toStyleString ":root"
+                )
+            , Html.text
+                ((List.range 0 maxLevel
+                    |> List.map
+                        (\level ->
+                            [ ( "opacity"
+                              , if (maxLevel - level) <= model.newImage.level then
+                                    "1"
+
+                                else
+                                    "0"
+                              )
+                            ]
+                                |> toStyleString (".level-" ++ String.fromInt level)
+                        )
+                 )
+                    |> String.join " "
                 )
             ]
         , div
