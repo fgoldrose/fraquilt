@@ -14,8 +14,8 @@ div {
 
 #container {
     position: relative;
-    width: 400px;
-    height: 400px;
+    width: 100vw;
+    height: 100vh;
 }
 
 #new {
@@ -35,7 +35,7 @@ div {
     bottom: 0;
     opacity: var(--old-opacity);
     will-change: opacity;
-    transition: opacity 1s linear;
+    transition: opacity 1s ease-out;
 }
 
 .tl {
@@ -62,4 +62,5 @@ div {
     position: relative;
     height: 100%;
     width: 100%;
+    transition: background-color 1s linear;
 }

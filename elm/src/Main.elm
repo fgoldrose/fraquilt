@@ -28,8 +28,8 @@ type alias Style =
     ( String, String )
 
 
-bottomConfigValues : Adjustments config -> Int -> config -> List ( String, config )
-bottomConfigValues adjustments level_ config_ =
+allConfigValues : Adjustments config -> Int -> config -> List ( String, config )
+allConfigValues adjustments level_ config_ =
     let
         helper : String -> Int -> config -> List ( String, config ) -> List ( String, config )
         helper pathKey level config soFar =
@@ -46,7 +46,11 @@ bottomConfigValues adjustments level_ config_ =
                         (helper (pathKey ++ "-bl")
                             (level - 1)
                             (adjustments.bl config)
-                            (helper (pathKey ++ "-br") (level - 1) (adjustments.br config) soFar)
+                            (helper (pathKey ++ "-br")
+                                (level - 1)
+                                (adjustments.br config)
+                                (( pathKey, config ) :: soFar)
+                            )
                         )
                     )
     in
@@ -170,6 +174,40 @@ initialColorVariables list =
         list
 
 
+viewFrameworks : String -> Direction -> Fraquilt -> Html Msg
+viewFrameworks idString direction image =
+    Keyed.node "div"
+        [ id idString ]
+        (List.range 0 maxLevel
+            |> List.map
+                (\level ->
+                    ( String.fromInt level
+                    , div
+                        [ id ("level-" ++ String.fromInt level)
+                        , onTransitionEnd (AnimateLevel level)
+                        , Html.Attributes.style "opacity"
+                            (if
+                                (direction == Up && level <= image.level)
+                                    || (direction == Down && level <= image.level)
+                             then
+                                "1"
+
+                             else
+                                "0"
+                            )
+                        , Html.Attributes.style "transition" "opacity 0.3s linear"
+                        , Html.Attributes.style "position" "absolute"
+                        , Html.Attributes.style "top" "0"
+                        , Html.Attributes.style "bottom" "0"
+                        , Html.Attributes.style "right" "0"
+                        , Html.Attributes.style "left" "0"
+                        ]
+                        [ lazy3 frameWork level "path" "outer" ]
+                    )
+                )
+        )
+
+
 view : Model -> Html Msg
 view model =
     div []
@@ -196,19 +234,12 @@ view model =
                     |> toStyleString ":root"
                 )
             ]
-        , Keyed.node "div"
-            [ id "container", onClick Randomize ]
-            [ ( "new" ++ String.fromInt model.newImage.level
-              , div [ id "new" ] [ lazy3 frameWork model.newImage.level "path" "outer" ]
-              )
-            , ( "old"
-              , div [ id "old", onTransitionEnd AnimateLevel ] [ lazy3 frameWork model.oldImage.level "path" "outer" ]
-              )
-            ]
-        , button [ onClick (DoNextAnimationFrame Randomize) ] [ text "Random" ]
-        , button [ onClick (ChangeLevel -1) ] [ Html.text "- level" ]
-        , button [ onClick (ChangeLevel 1) ] [ Html.text "+ level" ]
-        , button [ onClick (DoNextAnimationFrame ChangeStartColor) ] [ Html.text "Change start color" ]
+        , div [ id "container" ] [ viewFrameworks "new" model.levelAnimationDirection model.newImage ]
+
+        -- , button [ onClick (DoNextAnimationFrame Randomize) ] [ text "Random" ]
+        -- , button [ onClick (ChangeLevel -1) ] [ Html.text "- level" ]
+        -- , button [ onClick (ChangeLevel 1) ] [ Html.text "+ level" ]
+        -- , button [ onClick (DoNextAnimationFrame ChangeStartColor) ] [ Html.text "Change start color" ]
         ]
 
 
@@ -245,6 +276,11 @@ type alias Flags =
     { randomSeed : Int }
 
 
+maxLevel : Int
+maxLevel =
+    7
+
+
 init : Flags -> ( Model, Cmd Msg )
 init flags =
     let
@@ -267,7 +303,7 @@ init flags =
         initImage =
             { iteration = 0
             , styleString =
-                bottomConfigValues adjustments level (List.range 0 (numberOfVariables - 1))
+                allConfigValues adjustments maxLevel (List.range 0 (numberOfVariables - 1))
                     |> mapStylesToStringTCO rgbToStyles
             , adjustments = adjustments
             , level = level
@@ -280,7 +316,7 @@ init flags =
       , randomSeed = seedAfterColor
       , numberOfVariables = numberOfVariables
       , levelAnimationDirection = Up
-      , doNextAnimationFrame = [ AnimateLevel ]
+      , doNextAnimationFrame = [ AnimateLevel 0 ]
       }
     , Cmd.none
     )
@@ -288,7 +324,7 @@ init flags =
 
 type Msg
     = Randomize
-    | AnimateLevel
+    | AnimateLevel Int
     | ChangeLevel Int
     | ChangeStartColor
     | DoNextAnimationFrame Msg
@@ -297,6 +333,10 @@ type Msg
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
+    let
+        _ =
+            Debug.log "level" ( msg, model.newImage.level )
+    in
     case msg of
         Randomize ->
             let
@@ -329,48 +369,58 @@ update msg model =
             , Cmd.none
             )
 
-        AnimateLevel ->
-            let
-                currentImage =
-                    getCurrentImage model
+        AnimateLevel fromLevel ->
+            if
+                (model.levelAnimationDirection == Up && (getCurrentImage model).level == fromLevel)
+                    || (model.levelAnimationDirection == Down && (getCurrentImage model).level == fromLevel - 1)
+            then
+                let
+                    currentImage =
+                        getCurrentImage model
 
-                ( randomizeFunc, newSeed ) =
-                    randomizeImage model.numberOfVariables model.randomSeed
+                    changeLevel dir image =
+                        case dir of
+                            Up ->
+                                { image | level = image.level + 1 }
 
-                newModel =
-                    if currentImage.level == 7 then
-                        { model
-                            | levelAnimationDirection = Down
-                            , randomSeed = newSeed
-                        }
+                            Down ->
+                                { image | level = image.level - 1 }
+                in
+                ( if currentImage.level == maxLevel then
+                    { model
+                        | levelAnimationDirection = Down
+                    }
+                        |> updateImage (changeLevel Down)
 
-                    else if currentImage.level == 0 then
+                  else if currentImage.level == 0 then
+                    if model.levelAnimationDirection == Down then
+                        let
+                            ( randomizeFunc, newSeed ) =
+                                randomizeImage model.numberOfVariables model.randomSeed
+                        in
                         { model
                             | levelAnimationDirection = Up
                             , randomSeed = newSeed
                         }
+                            |> updateImage randomizeFunc
 
                     else
-                        model
-            in
-            ( newModel
-                |> updateImage
-                    (\image ->
-                        case newModel.levelAnimationDirection of
-                            Up ->
-                                if model.levelAnimationDirection == Up then
-                                    { image | level = image.level + 1 }
-                                        |> recalcConfigs
+                        { model
+                            | levelAnimationDirection = Up
+                        }
+                            |> updateImage (changeLevel Up)
 
-                                else
-                                    randomizeFunc image
+                  else
+                    model |> updateImage (changeLevel model.levelAnimationDirection)
+                , Cmd.none
+                )
 
-                            Down ->
-                                { image | level = image.level - 1 }
-                                    |> recalcConfigs
-                    )
-            , Cmd.none
-            )
+            else
+                let
+                    _ =
+                        Debug.log "notlevel" fromLevel
+                in
+                ( model, Cmd.none )
 
         ChangeLevel i ->
             ( model
@@ -379,7 +429,6 @@ update msg model =
                         { image
                             | level = image.level + i
                         }
-                            |> recalcConfigs
                     )
             , Cmd.none
             )
@@ -405,34 +454,34 @@ update msg model =
 
 getCurrentImage : Model -> Fraquilt
 getCurrentImage model =
-    if model.oldVarOpacity == 1 then
-        model.oldImage
-
-    else
-        model.newImage
+    -- if model.oldVarOpacity == 1 then
+    --     model.oldImage
+    -- else
+    --     model.newImage
+    model.newImage
 
 
 updateImage : (Fraquilt -> Fraquilt) -> Model -> Model
 updateImage f model =
-    if model.oldVarOpacity == 1 then
-        let
-            updatedImage =
-                f model.oldImage
-        in
-        { model
-            | newImage = updatedImage
-            , oldVarOpacity = 0
-        }
-
-    else
-        let
-            updatedImage =
-                f model.newImage
-        in
-        { model
-            | oldVarOpacity = 1
-            , oldImage = updatedImage
-        }
+    -- if model.oldVarOpacity == 1 then
+    --     let
+    --         updatedImage =
+    --             f model.oldImage
+    --     in
+    --     { model
+    --         | newImage = updatedImage
+    --         , oldVarOpacity = 0
+    --     }
+    -- else
+    --     let
+    --         updatedImage =
+    --             f model.newImage
+    --     in
+    --     { model
+    --         | oldVarOpacity = 1
+    --         , oldImage = updatedImage
+    --     }
+    { model | newImage = f model.newImage }
 
 
 recalcConfigs : Fraquilt -> Fraquilt
@@ -440,9 +489,9 @@ recalcConfigs image =
     { image
         | iteration = image.iteration + 1
         , styleString =
-            bottomConfigValues
+            allConfigValues
                 image.adjustments
-                image.level
+                maxLevel
                 (List.range 0 (List.length image.initialVariables - 1))
                 |> mapStylesToStringTCO rgbToStyles
                 |> (\x ->
@@ -494,5 +543,5 @@ main =
                     Sub.none
 
                 else
-                    Time.every 3000 (\_ -> GotNextAnimationFrame)
+                    Browser.Events.onAnimationFrame (\_ -> GotNextAnimationFrame)
         }
