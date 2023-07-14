@@ -198,17 +198,17 @@ view model =
             ]
         , Keyed.node "div"
             [ id "container", onClick Randomize ]
-            [ ( String.fromInt model.newImage.level
+            [ ( "new" ++ String.fromInt model.newImage.level
               , div [ id "new" ] [ lazy3 frameWork model.newImage.level "path" "outer" ]
               )
-            , ( String.fromInt model.oldImage.level
-              , div [ id "old" ] [ lazy3 frameWork model.oldImage.level "path" "outer" ]
+            , ( "old"
+              , div [ id "old", onTransitionEnd AnimateLevel ] [ lazy3 frameWork model.oldImage.level "path" "outer" ]
               )
             ]
-        , button [ onClick Randomize ] [ text "Random" ]
+        , button [ onClick (DoNextAnimationFrame Randomize) ] [ text "Random" ]
         , button [ onClick (ChangeLevel -1) ] [ Html.text "- level" ]
         , button [ onClick (ChangeLevel 1) ] [ Html.text "+ level" ]
-        , button [ onClick ChangeStartColor ] [ Html.text "Change start color" ]
+        , button [ onClick (DoNextAnimationFrame ChangeStartColor) ] [ Html.text "Change start color" ]
         ]
 
 
@@ -231,7 +231,14 @@ type alias Model =
     , oldVarOpacity : Int
     , randomSeed : Random.Seed
     , numberOfVariables : Int -- Length of list
+    , levelAnimationDirection : Direction
+    , doNextAnimationFrame : List Msg
     }
+
+
+type Direction
+    = Up
+    | Down
 
 
 type alias Flags =
@@ -245,7 +252,7 @@ init flags =
             10
 
         level =
-            7
+            0
 
         seed =
             Random.initialSeed flags.randomSeed
@@ -272,20 +279,23 @@ init flags =
       , oldVarOpacity = 1
       , randomSeed = seedAfterColor
       , numberOfVariables = numberOfVariables
+      , levelAnimationDirection = Up
+      , doNextAnimationFrame = [ AnimateLevel ]
       }
     , Cmd.none
-      -- , Process.sleep 1000
-      --     |> Task.perform (\_ -> ChangeStartColor)
     )
 
 
 type Msg
     = Randomize
+    | AnimateLevel
     | ChangeLevel Int
     | ChangeStartColor
+    | DoNextAnimationFrame Msg
+    | GotNextAnimationFrame
 
 
-update : Msg -> Model -> ( Model, Cmd msg )
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     let
         recalcConfigs image =
@@ -306,28 +316,26 @@ update msg model =
                            )
             }
 
-        updateImage : (Fraquilt -> ( Fraquilt, Random.Seed )) -> Model
+        updateImage : (Fraquilt -> ( Fraquilt, Model )) -> Model
         updateImage f =
             if model.oldVarOpacity == 1 then
                 let
-                    ( updatedImage, newSeed ) =
+                    ( updatedImage, newModel ) =
                         f model.oldImage
                 in
-                { model
+                { newModel
                     | newImage = updatedImage
                     , oldVarOpacity = 0
-                    , randomSeed = newSeed
                 }
 
             else
                 let
-                    ( updatedImage, newSeed ) =
+                    ( updatedImage, newModel ) =
                         f model.newImage
                 in
-                { model
+                { newModel
                     | oldVarOpacity = 1
                     , oldImage = updatedImage
-                    , randomSeed = newSeed
                 }
     in
     case msg of
@@ -351,7 +359,9 @@ update msg model =
                             -- , initialVariables = newInitialColor
                           }
                             |> recalcConfigs
-                        , seedAfterAdustments
+                        , { model
+                            | randomSeed = seedAfterAdustments
+                          }
                         )
             in
             ( updateImage updateImageFunc
@@ -373,9 +383,46 @@ update msg model =
                                 )
                                 model.randomSeed
                     in
-                    ( { image | initialVariables = newColor }, newSeed )
+                    ( { image | initialVariables = newColor }
+                    , { model | randomSeed = newSeed }
+                    )
             in
             ( updateImage updateImageFunc, Cmd.none )
+
+        AnimateLevel ->
+            ( updateImage
+                (\image ->
+                    case model.levelAnimationDirection of
+                        Up ->
+                            if image.level == 7 then
+                                ( { image
+                                    | level = image.level - 1
+                                  }
+                                    |> recalcConfigs
+                                , { model | levelAnimationDirection = Down }
+                                )
+
+                            else
+                                ( { image | level = image.level + 1 }
+                                    |> recalcConfigs
+                                , model
+                                )
+
+                        Down ->
+                            if image.level == 0 then
+                                ( { image | level = image.level + 1 }
+                                    |> recalcConfigs
+                                , { model | levelAnimationDirection = Up }
+                                )
+
+                            else
+                                ( { image | level = image.level - 1 }
+                                    |> recalcConfigs
+                                , model
+                                )
+                )
+            , Cmd.none
+            )
 
         ChangeLevel i ->
             ( updateImage
@@ -384,16 +431,34 @@ update msg model =
                         | level = image.level + i
                       }
                         |> recalcConfigs
-                    , model.randomSeed
+                    , model
                     )
                 )
             , Cmd.none
             )
 
+        DoNextAnimationFrame doMsg ->
+            ( { model
+                | doNextAnimationFrame =
+                    model.doNextAnimationFrame ++ [ doMsg ]
+              }
+            , Cmd.none
+            )
 
-onTransitionEnd : Html.Attribute Msg
-onTransitionEnd =
-    Html.Events.on "transitionend" (Json.Decode.succeed ChangeStartColor)
+        GotNextAnimationFrame ->
+            case model.doNextAnimationFrame of
+                first :: rest ->
+                    ( { model | doNextAnimationFrame = rest }
+                    , Task.perform identity (Task.succeed first)
+                    )
+
+                _ ->
+                    ( model, Cmd.none )
+
+
+onTransitionEnd : Msg -> Html.Attribute Msg
+onTransitionEnd msg =
+    Html.Events.on "transitionend" (Json.Decode.succeed msg)
 
 
 main : Program Flags Model Msg
@@ -402,5 +467,11 @@ main =
         { init = init
         , view = view
         , update = update
-        , subscriptions = \_ -> Sub.none
+        , subscriptions =
+            \{ doNextAnimationFrame } ->
+                if List.isEmpty doNextAnimationFrame then
+                    Sub.none
+
+                else
+                    Time.every 3000 (\_ -> GotNextAnimationFrame)
         }

@@ -35,7 +35,7 @@ div {
     bottom: 0;
     opacity: var(--old-opacity);
     will-change: opacity;
-    transition: opacity 1s linear 0.5s;
+    transition: opacity 1s linear;
 }
 
 .tl {
