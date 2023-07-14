@@ -90,23 +90,32 @@ frameWork level pathKey currentPosition =
             []
 
     else
-        div [ class "box", class currentPosition ]
-            [ frameWork
-                (level - 1)
-                (pathKey ++ "-tl")
-                "tl"
-            , frameWork
-                (level - 1)
-                (pathKey ++ "-tr")
-                "tr"
-            , frameWork
-                (level - 1)
-                (pathKey ++ "-bl")
-                "bl"
-            , frameWork
-                (level - 1)
-                (pathKey ++ "-br")
-                "br"
+        Keyed.node "div"
+            [ class "box", class currentPosition ]
+            [ ( pathKey ++ "-tl"
+              , frameWork
+                    (level - 1)
+                    (pathKey ++ "-tl")
+                    "tl"
+              )
+            , ( pathKey ++ "-tr"
+              , frameWork
+                    (level - 1)
+                    (pathKey ++ "-tr")
+                    "tr"
+              )
+            , ( pathKey ++ "-bl"
+              , frameWork
+                    (level - 1)
+                    (pathKey ++ "-bl")
+                    "bl"
+              )
+            , ( pathKey ++ "-br"
+              , frameWork
+                    (level - 1)
+                    (pathKey ++ "-br")
+                    "br"
+              )
             ]
 
 
@@ -184,18 +193,17 @@ viewFrameworks idString direction image =
                     ( String.fromInt level
                     , div
                         [ id ("level-" ++ String.fromInt level)
-                        , onTransitionEnd (AnimateLevel level)
+
+                        -- , onTransitionEnd (AnimateLevel level)
                         , Html.Attributes.style "opacity"
-                            (if
-                                (direction == Up && level <= image.level)
-                                    || (direction == Down && level <= image.level)
-                             then
+                            (if level <= image.level then
                                 "1"
 
                              else
                                 "0"
                             )
-                        , Html.Attributes.style "transition" "opacity 0.3s linear"
+
+                        --, Html.Attributes.style "transition" "opacity 0.1s linear"
                         , Html.Attributes.style "position" "absolute"
                         , Html.Attributes.style "top" "0"
                         , Html.Attributes.style "bottom" "0"
@@ -234,7 +242,11 @@ view model =
                     |> toStyleString ":root"
                 )
             ]
-        , div [ id "container" ] [ viewFrameworks "new" model.levelAnimationDirection model.newImage ]
+        , div
+            [ id "container"
+            , onClick AnimateLevel
+            ]
+            [ viewFrameworks "new" model.levelAnimationDirection model.newImage ]
 
         -- , button [ onClick (DoNextAnimationFrame Randomize) ] [ text "Random" ]
         -- , button [ onClick (ChangeLevel -1) ] [ Html.text "- level" ]
@@ -270,6 +282,7 @@ type alias Model =
 type Direction
     = Up
     | Down
+    | None
 
 
 type alias Flags =
@@ -315,8 +328,8 @@ init flags =
       , oldVarOpacity = 1
       , randomSeed = seedAfterColor
       , numberOfVariables = numberOfVariables
-      , levelAnimationDirection = Up
-      , doNextAnimationFrame = [ AnimateLevel 0 ]
+      , levelAnimationDirection = None
+      , doNextAnimationFrame = []
       }
     , Cmd.none
     )
@@ -324,7 +337,7 @@ init flags =
 
 type Msg
     = Randomize
-    | AnimateLevel Int
+    | AnimateLevel
     | ChangeLevel Int
     | ChangeStartColor
     | DoNextAnimationFrame Msg
@@ -369,58 +382,63 @@ update msg model =
             , Cmd.none
             )
 
-        AnimateLevel fromLevel ->
-            if
-                (model.levelAnimationDirection == Up && (getCurrentImage model).level == fromLevel)
-                    || (model.levelAnimationDirection == Down && (getCurrentImage model).level == fromLevel - 1)
-            then
-                let
-                    currentImage =
-                        getCurrentImage model
+        AnimateLevel ->
+            let
+                currentImage =
+                    getCurrentImage model
 
-                    changeLevel dir image =
-                        case dir of
-                            Up ->
-                                { image | level = image.level + 1 }
+                changeLevel dir image =
+                    case dir of
+                        Up ->
+                            { image | level = image.level + 1 }
 
-                            Down ->
-                                { image | level = image.level - 1 }
-                in
-                ( if currentImage.level == maxLevel then
+                        Down ->
+                            { image | level = image.level - 1 }
+
+                        None ->
+                            image
+            in
+            ( if currentImage.level == maxLevel then
+                if model.levelAnimationDirection == None then
                     { model
                         | levelAnimationDirection = Down
+                        , doNextAnimationFrame = model.doNextAnimationFrame ++ [ AnimateLevel ]
                     }
                         |> updateImage (changeLevel Down)
 
-                  else if currentImage.level == 0 then
-                    if model.levelAnimationDirection == Down then
-                        let
-                            ( randomizeFunc, newSeed ) =
-                                randomizeImage model.numberOfVariables model.randomSeed
-                        in
-                        { model
-                            | levelAnimationDirection = Up
-                            , randomSeed = newSeed
-                        }
-                            |> updateImage randomizeFunc
+                else
+                    { model
+                        | levelAnimationDirection = None
+                    }
 
-                    else
+              else if currentImage.level == 0 then
+                case
+                    model.levelAnimationDirection
+                of
+                    Down ->
+                        { model
+                            | levelAnimationDirection = None
+                        }
+
+                    None ->
                         { model
                             | levelAnimationDirection = Up
+                            , doNextAnimationFrame = [ Randomize, AnimateLevel ]
+                        }
+
+                    Up ->
+                        { model
+                            | doNextAnimationFrame = model.doNextAnimationFrame ++ [ AnimateLevel ]
                         }
                             |> updateImage (changeLevel Up)
 
-                  else
-                    model |> updateImage (changeLevel model.levelAnimationDirection)
-                , Cmd.none
-                )
-
-            else
-                let
-                    _ =
-                        Debug.log "notlevel" fromLevel
-                in
-                ( model, Cmd.none )
+              else
+                { model
+                    | doNextAnimationFrame = model.doNextAnimationFrame ++ [ AnimateLevel ]
+                }
+                    |> updateImage (changeLevel model.levelAnimationDirection)
+            , Cmd.none
+            )
 
         ChangeLevel i ->
             ( model
@@ -543,5 +561,12 @@ main =
                     Sub.none
 
                 else
-                    Browser.Events.onAnimationFrame (\_ -> GotNextAnimationFrame)
+                    Browser.Events.onAnimationFrameDelta
+                        (\x ->
+                            let
+                                _ =
+                                    Debug.log "onAnimationFrameDelta" x
+                            in
+                            GotNextAnimationFrame
+                        )
         }
