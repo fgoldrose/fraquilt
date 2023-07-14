@@ -4,7 +4,7 @@ import Browser
 import Browser.Events
 import Dict exposing (Dict)
 import Html exposing (Html, b, button, div, input, main_, text)
-import Html.Attributes exposing (class, id, type_, value)
+import Html.Attributes exposing (class, id, style, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Html.Keyed as Keyed
 import Html.Lazy exposing (lazy3)
@@ -82,6 +82,61 @@ toStyleString pathKey styles =
         ++ " }"
 
 
+configToRbgString : Config -> String
+configToRbgString list =
+    case list of
+        r :: g :: b :: _ ->
+            "rgb(" ++ String.fromInt r ++ "," ++ String.fromInt g ++ "," ++ String.fromInt b ++ ")"
+
+        _ ->
+            "rgb(0,0,0)"
+
+
+withInline : Adjustments Config -> Int -> String -> String -> Config -> Html msg
+withInline adjustments level pathKey currentPosition config =
+    if level == 0 then
+        div
+            [ class "box"
+            , class currentPosition
+            , id pathKey
+            , style "background-color" (configToRbgString config)
+            ]
+            []
+
+    else
+        Keyed.node "div"
+            [ class "box", class currentPosition ]
+            [ ( pathKey ++ "-tl"
+              , withInline adjustments
+                    (level - 1)
+                    (pathKey ++ "-tl")
+                    "tl"
+                    (adjustments.tl config)
+              )
+            , ( pathKey ++ "-tr"
+              , withInline adjustments
+                    (level - 1)
+                    (pathKey ++ "-tr")
+                    "tr"
+                    (adjustments.tr config)
+              )
+            , ( pathKey ++ "-bl"
+              , withInline adjustments
+                    (level - 1)
+                    (pathKey ++ "-bl")
+                    "bl"
+                    (adjustments.bl config)
+              )
+            , ( pathKey ++ "-br"
+              , withInline adjustments
+                    (level - 1)
+                    (pathKey ++ "-br")
+                    "br"
+                    (adjustments.br config)
+              )
+            ]
+
+
 frameWork : Int -> String -> String -> Html msg
 frameWork level pathKey currentPosition =
     if level == 0 then
@@ -91,7 +146,7 @@ frameWork level pathKey currentPosition =
 
     else
         Keyed.node "div"
-            [ class "box", class currentPosition, class ("level-" ++ String.fromInt level), id pathKey ]
+            [ class "box", class currentPosition ]
             [ ( pathKey ++ "-tl"
               , frameWork
                     (level - 1)
@@ -183,104 +238,75 @@ initialColorVariables list =
         list
 
 
-viewFrameworks : String -> Direction -> Fraquilt -> Html Msg
-viewFrameworks idString direction image =
-    div
-        [ id idString ]
-        [ div
-            [ -- , onTransitionEnd (AnimateLevel level)
-              -- , Html.Attributes.style "opacity"
-              --     (if level <= image.level then
-              --         "1"
-              --      else
-              --         "0"
-              --     )
-              --, Html.Attributes.style "transition" "opacity 0.1s linear"
-              Html.Attributes.style "position" "absolute"
-            , Html.Attributes.style "top" "0"
-            , Html.Attributes.style "bottom" "0"
-            , Html.Attributes.style "right" "0"
-            , Html.Attributes.style "left" "0"
-            ]
-            [ lazy3 frameWork maxLevel "path" "outer" ]
-        ]
+viewFrameworks : Model -> Html Msg
+viewFrameworks model =
+    Keyed.node "div"
+        [ id "new" ]
+        (List.range 0 maxLevel
+            |> List.map
+                (\level ->
+                    ( String.fromInt level
+                    , div
+                        [ id ("level-" ++ String.fromInt level)
 
+                        -- , onTransitionEnd (AnimateLevel level)
+                        , Html.Attributes.style "opacity"
+                            (if level <= model.newImage.level then
+                                "1"
 
-
--- (List.range 0 maxLevel
---     |> List.map
---         (\level ->
---             ( String.fromInt level
---             , div
---                 [ id ("level-" ++ String.fromInt level)
---                 -- , onTransitionEnd (AnimateLevel level)
---                 , Html.Attributes.style "opacity"
---                     (if level <= image.level then
---                         "1"
---                      else
---                         "0"
---                     )
---                 --, Html.Attributes.style "transition" "opacity 0.1s linear"
---                 , Html.Attributes.style "position" "absolute"
---                 , Html.Attributes.style "top" "0"
---                 , Html.Attributes.style "bottom" "0"
---                 , Html.Attributes.style "right" "0"
---                 , Html.Attributes.style "left" "0"
---                 ]
---                 [ lazy3 frameWork level "path" "outer" ]
---             )
---         )
--- )
+                             else
+                                "0"
+                            )
+                        , Html.Attributes.style "transition" "opacity 0.5s linear"
+                        , Html.Attributes.style "position" "absolute"
+                        , Html.Attributes.style "top" "0"
+                        , Html.Attributes.style "bottom" "0"
+                        , Html.Attributes.style "right" "0"
+                        , Html.Attributes.style "left" "0"
+                        ]
+                        [ Html.Lazy.lazy5 withInline
+                            model.newImage.adjustments
+                            level
+                            ("level-" ++ String.fromInt level)
+                            "outer"
+                            model.newImage.initialVariables
+                        ]
+                    )
+                )
+        )
 
 
 view : Model -> Html Msg
 view model =
     div []
-        [ Keyed.node "style"
-            [ id (String.fromInt model.newImage.iteration ++ "-" ++ String.fromInt model.oldImage.iteration) ]
-            [ ( String.fromInt model.newImage.iteration ++ "-" ++ String.fromInt model.oldImage.iteration
-              , Html.text (model.oldImage.styleString ++ model.newImage.styleString)
-              )
-            ]
-        , Html.node "style"
-            []
-            [ Html.text
-                (initialColorVariables
-                    model.newImage.initialVariables
-                    |> toStyleString "#new"
-                )
-            , Html.text
-                (initialColorVariables
-                    model.oldImage.initialVariables
-                    |> toStyleString "#old"
-                )
-            , Html.text
-                ([ ( "--old-opacity", model.oldVarOpacity |> String.fromInt ) ]
-                    |> toStyleString ":root"
-                )
-            , Html.text
-                ((List.range 0 maxLevel
-                    |> List.map
-                        (\level ->
-                            [ ( "opacity"
-                              , if (maxLevel - level) <= model.newImage.level then
-                                    "1"
-
-                                else
-                                    "0"
-                              )
-                            ]
-                                |> toStyleString (".level-" ++ String.fromInt level)
-                        )
-                 )
-                    |> String.join " "
-                )
-            ]
-        , div
+        [ -- Keyed.node "style"
+          --     [ id (String.fromInt model.newImage.iteration ++ "-" ++ String.fromInt model.oldImage.iteration) ]
+          --     [ ( String.fromInt model.newImage.iteration ++ "-" ++ String.fromInt model.oldImage.iteration
+          --       , Html.text (model.oldImage.styleString ++ model.newImage.styleString)
+          --       )
+          --     ]
+          -- , Html.node "style"
+          --     []
+          --     [ Html.text
+          --         (initialColorVariables
+          --             model.newImage.initialVariables
+          --             |> toStyleString "#new"
+          --         )
+          --     , Html.text
+          --         (initialColorVariables
+          --             model.oldImage.initialVariables
+          --             |> toStyleString "#old"
+          --         )
+          --     , Html.text
+          --         ([ ( "--old-opacity", model.oldVarOpacity |> String.fromInt ) ]
+          --             |> toStyleString ":root"
+          --         )
+          -- ]
+          div
             [ id "container"
             , onClick AnimateLevel
             ]
-            [ viewFrameworks "new" model.levelAnimationDirection model.newImage ]
+            [ viewFrameworks model ]
 
         -- , button [ onClick (DoNextAnimationFrame Randomize) ] [ text "Random" ]
         -- , button [ onClick (ChangeLevel -1) ] [ Html.text "- level" ]
@@ -295,7 +321,6 @@ view model =
 
 type alias Fraquilt =
     { iteration : Int
-    , styleString : String
     , adjustments : Adjustments Config
     , level : Int
     , initialVariables : Config
@@ -349,9 +374,6 @@ init flags =
         initImage : Fraquilt
         initImage =
             { iteration = 0
-            , styleString =
-                allConfigValues adjustments maxLevel (List.range 0 (numberOfVariables - 1))
-                    |> mapStylesToStringTCO rgbToStyles
             , adjustments = adjustments
             , level = level
             , initialVariables = newInitialColor |> Debug.log "init color"
@@ -536,24 +558,25 @@ updateImage f model =
     { model | newImage = f model.newImage }
 
 
-recalcConfigs : Fraquilt -> Fraquilt
-recalcConfigs image =
-    { image
-        | iteration = image.iteration + 1
-        , styleString =
-            allConfigValues
-                image.adjustments
-                maxLevel
-                (List.range 0 (List.length image.initialVariables - 1))
-                |> mapStylesToStringTCO rgbToStyles
-                |> (\x ->
-                        let
-                            _ =
-                                Debug.log "newStyles" ()
-                        in
-                        x
-                   )
-    }
+
+-- recalcConfigs : Fraquilt -> Fraquilt
+-- recalcConfigs image =
+--     { image
+--         | iteration = image.iteration + 1
+--         , styleString =
+--             allConfigValues
+--                 image.adjustments
+--                 maxLevel
+--                 (List.range 0 (List.length image.initialVariables - 1))
+--                 |> mapStylesToStringTCO rgbToStyles
+--                 |> (\x ->
+--                         let
+--                             _ =
+--                                 Debug.log "newStyles" ()
+--                         in
+--                         x
+--                    )
+--     }
 
 
 randomizeImage : Int -> Random.Seed -> ( Fraquilt -> Fraquilt, Random.Seed )
@@ -573,7 +596,7 @@ randomizeImage numberOfVariables randomSeed =
             | adjustments = randomizedAdjustments
             , initialVariables = newInitialColor
         }
-            |> recalcConfigs
+      -- |> recalcConfigs
     , newSeed
     )
 
