@@ -11,6 +11,7 @@ import Html.Lazy
 import Json.Decode
 import List.Extra as List
 import Random
+import Random.List
 import Task
 
 
@@ -188,7 +189,7 @@ generateImage adjustments memoized level pathKey currentPosition config =
 
 randomListShuffleFunction : Int -> Random.Generator (List Int -> List Int)
 randomListShuffleFunction listLength =
-    Random.list listLength (Random.int 0 (listLength - 1))
+    Random.List.shuffle (List.range 0 (listLength - 1))
         |> Random.map
             (\listOfIndices ->
                 \listInput ->
@@ -294,7 +295,7 @@ init : Flags -> ( Model, Cmd Msg )
 init flags =
     let
         numberOfVariables =
-            8
+            7
 
         level =
             maxLevel
