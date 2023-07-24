@@ -48,7 +48,12 @@ generateImage adjustments level pathKey currentPosition config =
 
     else
         Keyed.node "div"
-            [ class "box", class currentPosition ]
+            [ class "box"
+            , class currentPosition
+            , Html.Attributes.style "border-color" (configToRbgString config)
+            , Html.Attributes.style "border-width" "1px"
+            , Html.Attributes.style "border-style" "solid"
+            ]
             [ ( pathKey ++ "-tl"
               , generateImage adjustments
                     (level - 1)
