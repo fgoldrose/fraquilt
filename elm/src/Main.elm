@@ -37,6 +37,20 @@ configToRbgString list =
             "rgb(0,0,0)"
 
 
+configToBorderStyle : Config -> List (Html.Attribute Msg)
+configToBorderStyle list =
+    case list of
+        l :: r :: t :: b :: _ ->
+            [ Html.Attributes.style "border-left-width" (String.fromInt l ++ "px")
+            , Html.Attributes.style "border-right-width" (String.fromInt r ++ "px")
+            , Html.Attributes.style "border-top-width" (String.fromInt t ++ "px")
+            , Html.Attributes.style "border-bottom-width" (String.fromInt b ++ "px")
+            ]
+
+        _ ->
+            []
+
+
 borderWidthString : Maybe Int -> String
 borderWidthString i =
     i
@@ -66,123 +80,108 @@ type alias Memoized =
         }
 
 
-generateImage : Adjustments Config -> Memoized -> Int -> String -> String -> Config -> ( Html Msg, Memoized )
-generateImage adjustments memoized level pathKey currentPosition config =
+type alias ConfigParams =
+    { config : Config
+    , adjustments : Adjustments Config
+    , memoized : Memoized
+    }
+
+
+generateImage : ConfigParams -> ConfigParams -> Int -> String -> String -> ( Html Msg, ConfigParams, ConfigParams )
+generateImage colorConfigParams borderConfigParams level pathKey currentPosition =
     if level == 0 then
         ( div
             [ class "box"
             , class currentPosition
             , id pathKey
-            , Html.Attributes.style "background-color" (configToRbgString config)
-
-            -- , Html.Attributes.style "border-top-left-radius" (List.getAt 3 config |> borderRadiusString)
-            -- , Html.Attributes.style "border-top-right-radius" (List.getAt 4 config |> borderRadiusString)
-            -- , Html.Attributes.style "border-bottom-left-radius" (List.getAt 5 config |> borderRadiusString)
-            -- , Html.Attributes.style "border-bottom-right-radius" (List.getAt 6 config |> borderRadiusString)
+            , Html.Attributes.style "background-color" (configToRbgString colorConfigParams.config)
             ]
             []
-        , memoized
+        , colorConfigParams
+        , borderConfigParams
         )
 
     else
         let
             wrapImages subImages =
                 Keyed.node "div"
-                    [ class "box"
-                    , class currentPosition
-                    , Html.Attributes.style "border-style" "solid"
-                    , Html.Attributes.style "border-color" (configToRbgString config)
-                    , Html.Attributes.style "border-left-width" (List.getAt 3 config |> borderWidthString)
-                    , Html.Attributes.style "border-right-width" (List.getAt 4 config |> borderWidthString)
-                    , Html.Attributes.style "border-top-width" (List.getAt 5 config |> borderWidthString)
-                    , Html.Attributes.style "border-bottom-width" (List.getAt 6 config |> borderWidthString)
-                    ]
+                    ([ class "box"
+                     , class currentPosition
+                     , Html.Attributes.style "border-style" "solid"
+                     , Html.Attributes.style "border-color" (configToRbgString colorConfigParams.config)
+                     , Html.Attributes.style "background-color" (configToRbgString colorConfigParams.config)
+                     ]
+                        ++ configToBorderStyle borderConfigParams.config
+                    )
                     subImages
 
-            generateImageLevel configs =
-                let
-                    ( tlImage, memoized2 ) =
-                        generateImage adjustments
-                            memoized
-                            (level - 1)
-                            (pathKey ++ "-tl")
-                            "tl"
-                            configs.tl
-
-                    ( trImage, memoized3 ) =
-                        generateImage adjustments
-                            memoized2
-                            (level - 1)
-                            (pathKey ++ "-tr")
-                            "tr"
-                            configs.tr
-
-                    ( blImage, memoized4 ) =
-                        generateImage adjustments
-                            memoized3
-                            (level - 1)
-                            (pathKey ++ "-bl")
-                            "bl"
-                            configs.bl
-
-                    ( brImage, memoized5 ) =
-                        generateImage adjustments
-                            memoized4
-                            (level - 1)
-                            (pathKey ++ "-br")
-                            "br"
-                            configs.br
-                in
-                ( wrapImages
-                    [ ( pathKey ++ "-tl", tlImage )
-                    , ( pathKey ++ "-tr", trImage )
-                    , ( pathKey ++ "-bl", blImage )
-                    , ( pathKey ++ "-br", brImage )
-                    ]
-                , memoized5
-                )
-        in
-        case Dict.get config memoized of
-            Just { adjust } ->
-                -- case Dict.get level levelImages of
-                --     Just image ->
-                --         ( image, memoized )
-                --     Nothing ->
-                let
-                    ( image, returnedMemoized ) =
-                        generateImageLevel adjust
-
-                    newMemoized =
-                        Dict.insert config
-                            { adjust = adjust
-
-                            -- , levelImages = Dict.insert level image levelImages
-                            }
-                            returnedMemoized
-                in
-                ( image, newMemoized )
-
-            Nothing ->
-                let
-                    adjust =
-                        { tl = adjustments.tl config
-                        , tr = adjustments.tr config
-                        , bl = adjustments.bl config
-                        , br = adjustments.br config
+            adjustColor =
+                Dict.get colorConfigParams.config colorConfigParams.memoized
+                    |> Maybe.map .adjust
+                    |> Maybe.withDefault
+                        { tl = colorConfigParams.adjustments.tl colorConfigParams.config
+                        , tr = colorConfigParams.adjustments.tr colorConfigParams.config
+                        , bl = colorConfigParams.adjustments.bl colorConfigParams.config
+                        , br = colorConfigParams.adjustments.br colorConfigParams.config
                         }
 
-                    ( image, returnedMemoized ) =
-                        generateImageLevel adjust
+            adjustBorder =
+                Dict.get borderConfigParams.config borderConfigParams.memoized
+                    |> Maybe.map .adjust
+                    |> Maybe.withDefault
+                        { tl = borderConfigParams.adjustments.tl borderConfigParams.config
+                        , tr = borderConfigParams.adjustments.tr borderConfigParams.config
+                        , bl = borderConfigParams.adjustments.bl borderConfigParams.config
+                        , br = borderConfigParams.adjustments.br borderConfigParams.config
+                        }
 
-                    newMemoized =
-                        Dict.insert config
-                            { adjust = adjust
+            newColorConfigParams =
+                { colorConfigParams | memoized = Dict.insert colorConfigParams.config { adjust = adjustColor } colorConfigParams.memoized }
 
-                            -- , levelImages = Dict.singleton level image
-                            }
-                            returnedMemoized
-                in
-                ( image, newMemoized )
+            newBorderConfigParams =
+                { borderConfigParams | memoized = Dict.insert borderConfigParams.config { adjust = adjustBorder } borderConfigParams.memoized }
+
+            ( tlImage, colorMemoized2, borderMemoized2 ) =
+                generateImage
+                    { newColorConfigParams | config = adjustColor.tl }
+                    { newBorderConfigParams | config = adjustBorder.tl }
+                    (level - 1)
+                    (pathKey ++ "-tl")
+                    "tl"
+
+            ( trImage, colorMemoized3, borderMemoized3 ) =
+                generateImage
+                    { colorMemoized2 | config = adjustColor.tr }
+                    { borderMemoized2 | config = adjustBorder.tr }
+                    (level - 1)
+                    (pathKey ++ "-tr")
+                    "tr"
+
+            ( blImage, colorMemoized4, borderMemoized4 ) =
+                generateImage
+                    { colorMemoized3 | config = adjustColor.bl }
+                    { borderMemoized3 | config = adjustBorder.bl }
+                    (level - 1)
+                    (pathKey ++ "-bl")
+                    "bl"
+
+            ( brImage, colorMemoized5, borderMemoized5 ) =
+                generateImage
+                    { colorMemoized4 | config = adjustColor.br }
+                    { borderMemoized4 | config = adjustBorder.br }
+                    (level - 1)
+                    (pathKey ++ "-br")
+                    "br"
+        in
+        ( wrapImages
+            [ ( pathKey ++ "-tl", tlImage )
+            , ( pathKey ++ "-tr", trImage )
+            , ( pathKey ++ "-bl", blImage )
+            , ( pathKey ++ "-br", brImage )
+            ]
+        , colorMemoized5
+        , borderMemoized5
+        )
 
 
 randomListShuffleFunction : Int -> Random.Generator (List Int -> List Int)
@@ -234,13 +233,18 @@ viewFrameworks model =
             , Html.Attributes.style "left" "0"
             ]
             [ generateImage
-                model.adjustments
-                Dict.empty
+                { adjustments = model.adjustments
+                , memoized = Dict.empty
+                , config = model.initialVariables
+                }
+                { adjustments = model.borderAdjustments
+                , memoized = Dict.empty
+                , config = [ 0, 1, 2, 3 ]
+                }
                 maxLevel
                 ("level-" ++ String.fromInt maxLevel)
                 "outer"
-                model.initialVariables
-                |> Tuple.first
+                |> (\( image, _, _ ) -> image)
             ]
       )
     ]
@@ -265,6 +269,7 @@ view model =
 type alias Model =
     { iteration : Int
     , adjustments : Adjustments Config
+    , borderAdjustments : Adjustments Config
     , level : Int
     , initialVariables : Config
     , randomSeed : Random.Seed
@@ -293,7 +298,7 @@ init : Flags -> ( Model, Cmd Msg )
 init flags =
     let
         numberOfVariables =
-            7
+            4
 
         level =
             maxLevel
@@ -304,11 +309,15 @@ init flags =
         ( adjustments, seedAfterAdustments ) =
             Random.step (randomizeAdjustments numberOfVariables) seed
 
+        ( borderAdjustments, seedAfterBorderAdjustments ) =
+            Random.step (randomizeAdjustments 4) seedAfterAdustments
+
         ( newInitialColor, seedAfterColor ) =
-            Random.step (randomVariables numberOfVariables) seedAfterAdustments
+            Random.step (randomVariables numberOfVariables) seedAfterBorderAdjustments
     in
     ( { iteration = 0
       , adjustments = adjustments
+      , borderAdjustments = borderAdjustments
       , level = level
       , initialVariables = newInitialColor
       , randomSeed = seedAfterColor
@@ -335,11 +344,15 @@ update msg model =
                 ( randomizedAdjustments, seedAfterAdustments ) =
                     Random.step (randomizeAdjustments model.numberOfVariables) model.randomSeed
 
+                ( borderAdjustments, seedAfterBorderAdjustments ) =
+                    Random.step (randomizeAdjustments 4) seedAfterAdustments
+
                 ( newInitialColor, newSeed ) =
-                    Random.step (randomVariables model.numberOfVariables) seedAfterAdustments
+                    Random.step (randomVariables model.numberOfVariables) seedAfterBorderAdjustments
             in
             ( { model
                 | adjustments = randomizedAdjustments
+                , borderAdjustments = borderAdjustments
                 , initialVariables = newInitialColor
                 , randomSeed = newSeed
                 , iteration = model.iteration + 1
