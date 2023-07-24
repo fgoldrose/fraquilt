@@ -40,11 +40,11 @@ borderWidthString level i =
     i
         |> Maybe.withDefault 0
         |> toFloat
-        |> (\x -> ((x / 255 * toFloat (2 ^ level) / 2) |> String.fromFloat) ++ "px")
+        |> (\x -> ((x / 255 * toFloat (2 ^ level)) |> String.fromFloat) ++ "px")
 
 
-generateImage : Adjustments Config -> Int -> String -> String -> Config -> Html msg
-generateImage adjustments level pathKey currentPosition config =
+generateImage : Adjustments Config -> Int -> Int -> String -> String -> Config -> Html Msg
+generateImage adjustments currentLevel level pathKey currentPosition config =
     if level == 0 then
         div
             [ class "box"
@@ -64,9 +64,22 @@ generateImage adjustments level pathKey currentPosition config =
             , Html.Attributes.style "border-right-width" (List.getAt 5 config |> borderWidthString level)
             , Html.Attributes.style "border-bottom-width" (List.getAt 6 config |> borderWidthString level)
             , Html.Attributes.style "border-style" "solid"
+
+            -- , Html.Attributes.style "opacity"
+            --     (if currentLevel < level then
+            --         "0"
+            --      else
+            --         "1"
+            --     )
+            -- -- , Html.Attributes.style "transition" "opacity 0.5s linear"
+            -- , if level == maxLevel then
+            --     onTransitionEnd Randomize
+            --   else
+            --     class ""
             ]
             [ ( pathKey ++ "-tl"
               , generateImage adjustments
+                    currentLevel
                     (level - 1)
                     (pathKey ++ "-tl")
                     "tl"
@@ -74,6 +87,7 @@ generateImage adjustments level pathKey currentPosition config =
               )
             , ( pathKey ++ "-tr"
               , generateImage adjustments
+                    currentLevel
                     (level - 1)
                     (pathKey ++ "-tr")
                     "tr"
@@ -81,6 +95,7 @@ generateImage adjustments level pathKey currentPosition config =
               )
             , ( pathKey ++ "-bl"
               , generateImage adjustments
+                    currentLevel
                     (level - 1)
                     (pathKey ++ "-bl")
                     "bl"
@@ -88,6 +103,7 @@ generateImage adjustments level pathKey currentPosition config =
               )
             , ( pathKey ++ "-br"
               , generateImage adjustments
+                    currentLevel
                     (level - 1)
                     (pathKey ++ "-br")
                     "br"
@@ -136,40 +152,27 @@ randomVariables n =
 
 viewFrameworks : Model -> List ( String, Html Msg )
 viewFrameworks model =
-    List.range 0 maxLevel
-        |> List.map
-            (\level ->
-                ( String.fromInt level
-                , div
-                    [ id ("level-" ++ String.fromInt level)
-                    , Html.Attributes.style "opacity"
-                        (if level <= model.level then
-                            "1"
-
-                         else
-                            "0"
-                        )
-                    , Html.Attributes.style "transition" "opacity 0.5s linear"
-                    , Html.Attributes.style "position" "absolute"
-                    , Html.Attributes.style "top" "0"
-                    , Html.Attributes.style "bottom" "0"
-                    , Html.Attributes.style "right" "0"
-                    , Html.Attributes.style "left" "0"
-                    , if level == 0 then
-                        onTransitionEnd Randomize
-
-                      else
-                        class ""
-                    ]
-                    [ Html.Lazy.lazy5 generateImage
-                        model.adjustments
-                        level
-                        ("level-" ++ String.fromInt level)
-                        "outer"
-                        model.initialVariables
-                    ]
-                )
-            )
+    -- List.range 0 maxLevel
+    --     |> List.map
+    --         (\level ->
+    [ ( String.fromInt maxLevel
+      , div
+            [ Html.Attributes.style "position" "absolute"
+            , Html.Attributes.style "top" "0"
+            , Html.Attributes.style "bottom" "0"
+            , Html.Attributes.style "right" "0"
+            , Html.Attributes.style "left" "0"
+            ]
+            [ Html.Lazy.lazy6 generateImage
+                model.adjustments
+                model.level
+                maxLevel
+                ("level-" ++ String.fromInt maxLevel)
+                "outer"
+                model.initialVariables
+            ]
+      )
+    ]
 
 
 view : Model -> Html Msg
@@ -177,11 +180,8 @@ view model =
     div []
         [ Keyed.node "div"
             [ id "container"
-            , if model.level == maxLevel then
-                onClick AnimateLevel
-
-              else
-                class ""
+            , onClick
+                Randomize
             ]
             (viewFrameworks model)
         ]
@@ -215,7 +215,7 @@ type alias Flags =
 
 maxLevel : Int
 maxLevel =
-    7
+    6
 
 
 init : Flags -> ( Model, Cmd Msg )
@@ -225,7 +225,7 @@ init flags =
             7
 
         level =
-            0
+            maxLevel
 
         seed =
             Random.initialSeed flags.randomSeed
@@ -243,7 +243,7 @@ init flags =
       , randomSeed = seedAfterColor
       , numberOfVariables = numberOfVariables
       , levelAnimationDirection = Up
-      , doNextAnimationFrame = [ AnimateLevel ]
+      , doNextAnimationFrame = []
       }
     , Cmd.none
     )
@@ -260,25 +260,20 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Randomize ->
-            if model.level == -1 then
-                let
-                    ( randomizedAdjustments, seedAfterAdustments ) =
-                        Random.step (randomizeAdjustments model.numberOfVariables) model.randomSeed
+            let
+                ( randomizedAdjustments, seedAfterAdustments ) =
+                    Random.step (randomizeAdjustments model.numberOfVariables) model.randomSeed
 
-                    ( newInitialColor, newSeed ) =
-                        Random.step (randomVariables model.numberOfVariables) seedAfterAdustments
-                in
-                ( { model
-                    | adjustments = randomizedAdjustments
-                    , initialVariables = newInitialColor
-                    , randomSeed = newSeed
-                    , doNextAnimationFrame = model.doNextAnimationFrame ++ [ AnimateLevel ]
-                  }
-                , Cmd.none
-                )
-
-            else
-                ( model, Cmd.none )
+                ( newInitialColor, newSeed ) =
+                    Random.step (randomVariables model.numberOfVariables) seedAfterAdustments
+            in
+            ( { model
+                | adjustments = randomizedAdjustments
+                , initialVariables = newInitialColor
+                , randomSeed = newSeed
+              }
+            , Cmd.none
+            )
 
         AnimateLevel ->
             let
