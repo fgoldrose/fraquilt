@@ -2,7 +2,8 @@ module Main exposing (..)
 
 import Browser
 import Browser.Events
-import Html exposing (Html, div)
+import Dict
+import Html exposing (Html, a, div)
 import Html.Attributes exposing (class, id)
 import Html.Events exposing (onClick)
 import Html.Keyed as Keyed
@@ -51,10 +52,22 @@ borderRadiusString i =
         |> (\x -> ((x / 255 * 100) |> String.fromFloat) ++ "%")
 
 
-generateImage : Adjustments Config -> Int -> Int -> String -> String -> Config -> Html Msg
-generateImage adjustments currentLevel level pathKey currentPosition config =
+type alias Memoized =
+    Dict.Dict Config
+        { adjust :
+            { tl : Config
+            , tr : Config
+            , bl : Config
+            , br : Config
+            }
+        , levelImages : Dict.Dict Int (Html Msg)
+        }
+
+
+generateImage : Adjustments Config -> Memoized -> Int -> String -> String -> Config -> ( Html Msg, Memoized )
+generateImage adjustments memoized level pathKey currentPosition config =
     if level == 0 then
-        div
+        ( div
             [ class "box"
             , class currentPosition
             , id pathKey
@@ -65,69 +78,112 @@ generateImage adjustments currentLevel level pathKey currentPosition config =
             , Html.Attributes.style "border-bottom-right-radius" (List.getAt 6 config |> borderRadiusString)
             ]
             []
+        , memoized
+        )
 
     else
-        div
-            [ class "box"
-            , class currentPosition
-            , Html.Attributes.style "background-color" (configToRbgString config)
-            ]
-            [ Keyed.node "div"
-                [ class "outer"
+        let
+            wrapImages subImages =
+                Keyed.node "div"
+                    [ class "box"
+                    , class currentPosition
+                    , Html.Attributes.style "background-color" (configToRbgString config)
+                    ]
+                    [ ( pathKey ++ "-outer"
+                      , Keyed.node "div"
+                            [ class "outer"
+                            , Html.Attributes.style "border-top-left-radius" (List.getAt 3 config |> borderRadiusString)
+                            , Html.Attributes.style "border-top-right-radius" (List.getAt 4 config |> borderRadiusString)
+                            , Html.Attributes.style "border-bottom-left-radius" (List.getAt 5 config |> borderRadiusString)
+                            , Html.Attributes.style "border-bottom-right-radius" (List.getAt 6 config |> borderRadiusString)
+                            ]
+                            subImages
+                      )
+                    ]
 
-                -- , Html.Attributes.style "border-color" (configToRbgString config)
-                , Html.Attributes.style "border-top-left-radius" (List.getAt 3 config |> borderRadiusString)
-                , Html.Attributes.style "border-top-right-radius" (List.getAt 4 config |> borderRadiusString)
-                , Html.Attributes.style "border-bottom-left-radius" (List.getAt 5 config |> borderRadiusString)
-                , Html.Attributes.style "border-bottom-right-radius" (List.getAt 6 config |> borderRadiusString)
+            generateImageLevel configs =
+                let
+                    ( tlImage, memoized2 ) =
+                        generateImage adjustments
+                            memoized
+                            (level - 1)
+                            (pathKey ++ "-tl")
+                            "tl"
+                            configs.tl
 
-                -- , Html.Attributes.style "border-style" "solid"
-                -- , Html.Attributes.style "opacity"
-                --     (if currentLevel < level then
-                --         "0"
-                --      else
-                --         "1"
-                --     )
-                -- -- , Html.Attributes.style "transition" "opacity 0.5s linear"
-                -- , if level == maxLevel then
-                --     onTransitionEnd Randomize
-                --   else
-                --     class ""
-                ]
-                [ ( pathKey ++ "-tl"
-                  , generateImage adjustments
-                        currentLevel
-                        (level - 1)
-                        (pathKey ++ "-tl")
-                        "tl"
-                        (adjustments.tl config)
-                  )
-                , ( pathKey ++ "-tr"
-                  , generateImage adjustments
-                        currentLevel
-                        (level - 1)
-                        (pathKey ++ "-tr")
-                        "tr"
-                        (adjustments.tr config)
-                  )
-                , ( pathKey ++ "-bl"
-                  , generateImage adjustments
-                        currentLevel
-                        (level - 1)
-                        (pathKey ++ "-bl")
-                        "bl"
-                        (adjustments.bl config)
-                  )
-                , ( pathKey ++ "-br"
-                  , generateImage adjustments
-                        currentLevel
-                        (level - 1)
-                        (pathKey ++ "-br")
-                        "br"
-                        (adjustments.br config)
-                  )
-                ]
-            ]
+                    ( trImage, memoized3 ) =
+                        generateImage adjustments
+                            memoized2
+                            (level - 1)
+                            (pathKey ++ "-tr")
+                            "tr"
+                            configs.tr
+
+                    ( blImage, memoized4 ) =
+                        generateImage adjustments
+                            memoized3
+                            (level - 1)
+                            (pathKey ++ "-bl")
+                            "bl"
+                            configs.bl
+
+                    ( brImage, memoized5 ) =
+                        generateImage adjustments
+                            memoized4
+                            (level - 1)
+                            (pathKey ++ "-br")
+                            "br"
+                            configs.br
+                in
+                ( wrapImages
+                    [ ( pathKey ++ "-tl", tlImage )
+                    , ( pathKey ++ "-tr", trImage )
+                    , ( pathKey ++ "-bl", blImage )
+                    , ( pathKey ++ "-br", brImage )
+                    ]
+                , memoized5
+                )
+        in
+        case Dict.get config memoized of
+            Just { adjust, levelImages } ->
+                case Dict.get level levelImages of
+                    Just image ->
+                        ( image, memoized )
+
+                    Nothing ->
+                        let
+                            ( image, returnedMemoized ) =
+                                generateImageLevel adjust
+
+                            newMemoized =
+                                Dict.insert config
+                                    { adjust = adjust
+                                    , levelImages = Dict.insert level image levelImages
+                                    }
+                                    returnedMemoized
+                        in
+                        ( image, newMemoized )
+
+            Nothing ->
+                let
+                    adjust =
+                        { tl = adjustments.tl config
+                        , tr = adjustments.tr config
+                        , bl = adjustments.bl config
+                        , br = adjustments.br config
+                        }
+
+                    ( image, returnedMemoized ) =
+                        generateImageLevel adjust
+
+                    newMemoized =
+                        Dict.insert config
+                            { adjust = adjust
+                            , levelImages = Dict.singleton level image
+                            }
+                            returnedMemoized
+                in
+                ( image, newMemoized )
 
 
 randomListShuffleFunction : Int -> Random.Generator (List Int -> List Int)
@@ -170,7 +226,7 @@ randomVariables n =
 
 viewFrameworks : Model -> List ( String, Html Msg )
 viewFrameworks model =
-    [ ( String.fromInt maxLevel
+    [ ( String.fromInt model.iteration
       , div
             [ Html.Attributes.style "position" "absolute"
             , Html.Attributes.style "top" "0"
@@ -178,13 +234,14 @@ viewFrameworks model =
             , Html.Attributes.style "right" "0"
             , Html.Attributes.style "left" "0"
             ]
-            [ Html.Lazy.lazy6 generateImage
+            [ generateImage
                 model.adjustments
-                model.level
+                Dict.empty
                 maxLevel
                 ("level-" ++ String.fromInt maxLevel)
                 "outer"
                 model.initialVariables
+                |> Tuple.first
             ]
       )
     ]
@@ -286,6 +343,7 @@ update msg model =
                 | adjustments = randomizedAdjustments
                 , initialVariables = newInitialColor
                 , randomSeed = newSeed
+                , iteration = model.iteration + 1
               }
             , Cmd.none
             )
