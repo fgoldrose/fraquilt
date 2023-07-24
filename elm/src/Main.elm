@@ -59,65 +59,74 @@ generateImage adjustments currentLevel level pathKey currentPosition config =
             , class currentPosition
             , id pathKey
             , Html.Attributes.style "background-color" (configToRbgString config)
-            ]
-            []
-
-    else
-        Keyed.node "div"
-            [ class "box"
-            , class currentPosition
-
-            -- , Html.Attributes.style "border-color" (configToRbgString config)
             , Html.Attributes.style "border-top-left-radius" (List.getAt 3 config |> borderRadiusString)
             , Html.Attributes.style "border-top-right-radius" (List.getAt 4 config |> borderRadiusString)
             , Html.Attributes.style "border-bottom-left-radius" (List.getAt 5 config |> borderRadiusString)
             , Html.Attributes.style "border-bottom-right-radius" (List.getAt 6 config |> borderRadiusString)
-
-            -- , Html.Attributes.style "border-style" "solid"
-            -- , Html.Attributes.style "opacity"
-            --     (if currentLevel < level then
-            --         "0"
-            --      else
-            --         "1"
-            --     )
-            -- -- , Html.Attributes.style "transition" "opacity 0.5s linear"
-            -- , if level == maxLevel then
-            --     onTransitionEnd Randomize
-            --   else
-            --     class ""
             ]
-            [ ( pathKey ++ "-tl"
-              , generateImage adjustments
-                    currentLevel
-                    (level - 1)
-                    (pathKey ++ "-tl")
-                    "tl"
-                    (adjustments.tl config)
-              )
-            , ( pathKey ++ "-tr"
-              , generateImage adjustments
-                    currentLevel
-                    (level - 1)
-                    (pathKey ++ "-tr")
-                    "tr"
-                    (adjustments.tr config)
-              )
-            , ( pathKey ++ "-bl"
-              , generateImage adjustments
-                    currentLevel
-                    (level - 1)
-                    (pathKey ++ "-bl")
-                    "bl"
-                    (adjustments.bl config)
-              )
-            , ( pathKey ++ "-br"
-              , generateImage adjustments
-                    currentLevel
-                    (level - 1)
-                    (pathKey ++ "-br")
-                    "br"
-                    (adjustments.br config)
-              )
+            []
+
+    else
+        div
+            [ class "box"
+            , class currentPosition
+            , Html.Attributes.style "background-color" (configToRbgString config)
+            ]
+            [ Keyed.node "div"
+                [ class "outer"
+
+                -- , Html.Attributes.style "border-color" (configToRbgString config)
+                , Html.Attributes.style "border-top-left-radius" (List.getAt 3 config |> borderRadiusString)
+                , Html.Attributes.style "border-top-right-radius" (List.getAt 4 config |> borderRadiusString)
+                , Html.Attributes.style "border-bottom-left-radius" (List.getAt 5 config |> borderRadiusString)
+                , Html.Attributes.style "border-bottom-right-radius" (List.getAt 6 config |> borderRadiusString)
+
+                -- , Html.Attributes.style "border-style" "solid"
+                -- , Html.Attributes.style "opacity"
+                --     (if currentLevel < level then
+                --         "0"
+                --      else
+                --         "1"
+                --     )
+                -- -- , Html.Attributes.style "transition" "opacity 0.5s linear"
+                -- , if level == maxLevel then
+                --     onTransitionEnd Randomize
+                --   else
+                --     class ""
+                ]
+                [ ( pathKey ++ "-tl"
+                  , generateImage adjustments
+                        currentLevel
+                        (level - 1)
+                        (pathKey ++ "-tl")
+                        "tl"
+                        (adjustments.tl config)
+                  )
+                , ( pathKey ++ "-tr"
+                  , generateImage adjustments
+                        currentLevel
+                        (level - 1)
+                        (pathKey ++ "-tr")
+                        "tr"
+                        (adjustments.tr config)
+                  )
+                , ( pathKey ++ "-bl"
+                  , generateImage adjustments
+                        currentLevel
+                        (level - 1)
+                        (pathKey ++ "-bl")
+                        "bl"
+                        (adjustments.bl config)
+                  )
+                , ( pathKey ++ "-br"
+                  , generateImage adjustments
+                        currentLevel
+                        (level - 1)
+                        (pathKey ++ "-br")
+                        "br"
+                        (adjustments.br config)
+                  )
+                ]
             ]
 
 
@@ -161,27 +170,24 @@ randomVariables n =
 
 viewFrameworks : Model -> List ( String, Html Msg )
 viewFrameworks model =
-    List.range 0 maxLevel
-        |> List.map
-            (\level ->
-                ( String.fromInt level
-                , div
-                    [ Html.Attributes.style "position" "absolute"
-                    , Html.Attributes.style "top" "0"
-                    , Html.Attributes.style "bottom" "0"
-                    , Html.Attributes.style "right" "0"
-                    , Html.Attributes.style "left" "0"
-                    ]
-                    [ Html.Lazy.lazy6 generateImage
-                        model.adjustments
-                        model.level
-                        level
-                        ("level-" ++ String.fromInt level)
-                        "outer"
-                        model.initialVariables
-                    ]
-                )
-            )
+    [ ( String.fromInt maxLevel
+      , div
+            [ Html.Attributes.style "position" "absolute"
+            , Html.Attributes.style "top" "0"
+            , Html.Attributes.style "bottom" "0"
+            , Html.Attributes.style "right" "0"
+            , Html.Attributes.style "left" "0"
+            ]
+            [ Html.Lazy.lazy6 generateImage
+                model.adjustments
+                model.level
+                maxLevel
+                ("level-" ++ String.fromInt maxLevel)
+                "outer"
+                model.initialVariables
+            ]
+      )
+    ]
 
 
 view : Model -> Html Msg
@@ -224,7 +230,7 @@ type alias Flags =
 
 maxLevel : Int
 maxLevel =
-    6
+    7
 
 
 init : Flags -> ( Model, Cmd Msg )
