@@ -366,7 +366,7 @@ init : Flags -> ( Model, Cmd Msg )
 init flags =
     let
         numberOfVariables =
-            10
+            6
 
         level =
             0
@@ -467,22 +467,19 @@ update msg model =
                             image
             in
             if currentImage.level == maxLevel then
-                if model.levelAnimationDirection == None then
-                    ( { model
+                ( if model.levelAnimationDirection == None then
+                    { model
                         | levelAnimationDirection = Down
                         , doNextAnimationFrame = model.doNextAnimationFrame ++ [ AnimateLevel ]
-                      }
+                    }
                         |> updateImage (changeLevel Down)
-                    , Cmd.none
-                    )
 
-                else
-                    ( { model
+                  else
+                    { model
                         | levelAnimationDirection = None
-                      }
-                    , Process.sleep 1000
-                        |> Task.perform (\_ -> AnimateLevel)
-                    )
+                    }
+                , Cmd.none
+                )
 
             else if currentImage.level == -1 then
                 case
@@ -614,7 +611,7 @@ randomizeImage numberOfVariables randomSeed =
     ( \image ->
         { image
             | adjustments = randomizedAdjustments
-            , initialVariables = newInitialColor
+            , initialVariables = newInitialColor |> Debug.log "randomize color"
         }
       -- |> recalcConfigs
     , newSeed
