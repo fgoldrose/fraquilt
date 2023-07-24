@@ -16,24 +16,10 @@ div {
     bottom: 0;
 }
 
-#new {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-}
-
-
-#old {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    opacity: var(--old-opacity);
-    will-change: opacity;
-    transition: opacity 1s ease-out;
+.outer {
+    position: relative;
+    height: 100%;
+    width: 100%;
 }
 
 .tl {
@@ -54,11 +40,4 @@ div {
 .br {
     bottom: 0;
     right: 0;
-}
-
-.outer {
-    position: relative;
-    height: 100%;
-    width: 100%;
-    transition: background-color 1s linear;
 }
