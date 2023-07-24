@@ -43,6 +43,14 @@ borderWidthString level i =
         |> (\x -> ((x / 255 * 6) |> String.fromFloat) ++ "px")
 
 
+borderRadiusString : Maybe Int -> String
+borderRadiusString i =
+    i
+        |> Maybe.withDefault 0
+        |> toFloat
+        |> (\x -> ((x / 255 * 100) |> String.fromFloat) ++ "%")
+
+
 generateImage : Adjustments Config -> Int -> Int -> String -> String -> Config -> Html Msg
 generateImage adjustments currentLevel level pathKey currentPosition config =
     if level == 0 then
@@ -58,14 +66,14 @@ generateImage adjustments currentLevel level pathKey currentPosition config =
         Keyed.node "div"
             [ class "box"
             , class currentPosition
-            , Html.Attributes.style "border-color" (configToRbgString config)
-            , Html.Attributes.style "border-top-width" (List.getAt 3 config |> borderWidthString level)
-            , Html.Attributes.style "border-left-width" (List.getAt 4 config |> borderWidthString level)
-            , Html.Attributes.style "border-right-width" (List.getAt 5 config |> borderWidthString level)
-            , Html.Attributes.style "border-bottom-width" (List.getAt 6 config |> borderWidthString level)
-            , Html.Attributes.style "border-style" "solid"
-            , Html.Attributes.style "border-radius" (List.getAt 7 config |> Maybe.withDefault 0 |> toFloat |> (\x -> ((x / 255 * 100) |> String.fromFloat) ++ "%"))
 
+            -- , Html.Attributes.style "border-color" (configToRbgString config)
+            , Html.Attributes.style "border-top-left-radius" (List.getAt 3 config |> borderRadiusString)
+            , Html.Attributes.style "border-top-right-radius" (List.getAt 4 config |> borderRadiusString)
+            , Html.Attributes.style "border-bottom-left-radius" (List.getAt 5 config |> borderRadiusString)
+            , Html.Attributes.style "border-bottom-right-radius" (List.getAt 6 config |> borderRadiusString)
+
+            -- , Html.Attributes.style "border-style" "solid"
             -- , Html.Attributes.style "opacity"
             --     (if currentLevel < level then
             --         "0"
