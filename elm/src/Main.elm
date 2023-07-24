@@ -35,6 +35,14 @@ configToRbgString list =
             "rgb(0,0,0)"
 
 
+borderWidthString : Int -> Maybe Int -> String
+borderWidthString level i =
+    i
+        |> Maybe.withDefault 0
+        |> toFloat
+        |> (\x -> ((x / 255 * toFloat (2 ^ level) / 2) |> String.fromFloat) ++ "px")
+
+
 generateImage : Adjustments Config -> Int -> String -> String -> Config -> Html msg
 generateImage adjustments level pathKey currentPosition config =
     if level == 0 then
@@ -51,7 +59,10 @@ generateImage adjustments level pathKey currentPosition config =
             [ class "box"
             , class currentPosition
             , Html.Attributes.style "border-color" (configToRbgString config)
-            , Html.Attributes.style "border-width" "1px"
+            , Html.Attributes.style "border-top-width" (List.getAt 3 config |> borderWidthString level)
+            , Html.Attributes.style "border-left-width" (List.getAt 4 config |> borderWidthString level)
+            , Html.Attributes.style "border-right-width" (List.getAt 5 config |> borderWidthString level)
+            , Html.Attributes.style "border-bottom-width" (List.getAt 6 config |> borderWidthString level)
             , Html.Attributes.style "border-style" "solid"
             ]
             [ ( pathKey ++ "-tl"
@@ -211,7 +222,7 @@ init : Flags -> ( Model, Cmd Msg )
 init flags =
     let
         numberOfVariables =
-            6
+            7
 
         level =
             0
