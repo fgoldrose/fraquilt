@@ -40,7 +40,7 @@ borderWidthString level i =
     i
         |> Maybe.withDefault 0
         |> toFloat
-        |> (\x -> ((x / 255 * toFloat (2 ^ level)) |> String.fromFloat) ++ "px")
+        |> (\x -> ((x / 255 * 6) |> String.fromFloat) ++ "px")
 
 
 generateImage : Adjustments Config -> Int -> Int -> String -> String -> Config -> Html Msg
@@ -64,6 +64,7 @@ generateImage adjustments currentLevel level pathKey currentPosition config =
             , Html.Attributes.style "border-right-width" (List.getAt 5 config |> borderWidthString level)
             , Html.Attributes.style "border-bottom-width" (List.getAt 6 config |> borderWidthString level)
             , Html.Attributes.style "border-style" "solid"
+            , Html.Attributes.style "border-radius" (List.getAt 7 config |> Maybe.withDefault 0 |> toFloat |> (\x -> ((x / 255 * 100) |> String.fromFloat) ++ "%"))
 
             -- , Html.Attributes.style "opacity"
             --     (if currentLevel < level then
@@ -152,27 +153,27 @@ randomVariables n =
 
 viewFrameworks : Model -> List ( String, Html Msg )
 viewFrameworks model =
-    -- List.range 0 maxLevel
-    --     |> List.map
-    --         (\level ->
-    [ ( String.fromInt maxLevel
-      , div
-            [ Html.Attributes.style "position" "absolute"
-            , Html.Attributes.style "top" "0"
-            , Html.Attributes.style "bottom" "0"
-            , Html.Attributes.style "right" "0"
-            , Html.Attributes.style "left" "0"
-            ]
-            [ Html.Lazy.lazy6 generateImage
-                model.adjustments
-                model.level
-                maxLevel
-                ("level-" ++ String.fromInt maxLevel)
-                "outer"
-                model.initialVariables
-            ]
-      )
-    ]
+    List.range 0 maxLevel
+        |> List.map
+            (\level ->
+                ( String.fromInt level
+                , div
+                    [ Html.Attributes.style "position" "absolute"
+                    , Html.Attributes.style "top" "0"
+                    , Html.Attributes.style "bottom" "0"
+                    , Html.Attributes.style "right" "0"
+                    , Html.Attributes.style "left" "0"
+                    ]
+                    [ Html.Lazy.lazy6 generateImage
+                        model.adjustments
+                        model.level
+                        level
+                        ("level-" ++ String.fromInt level)
+                        "outer"
+                        model.initialVariables
+                    ]
+                )
+            )
 
 
 view : Model -> Html Msg
@@ -222,7 +223,7 @@ init : Flags -> ( Model, Cmd Msg )
 init flags =
     let
         numberOfVariables =
-            7
+            8
 
         level =
             maxLevel
