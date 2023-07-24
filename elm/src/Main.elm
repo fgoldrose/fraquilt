@@ -37,16 +37,16 @@ configToRbgString list =
             "rgb(0,0,0)"
 
 
-borderWidthString : Int -> Maybe Int -> String
-borderWidthString level i =
+borderWidthString : Maybe Int -> String
+borderWidthString i =
     i
         |> Maybe.withDefault 0
         |> toFloat
-        |> (\x -> ((x / 255 * 6) |> String.fromFloat) ++ "px")
+        |> (\x -> ((x / 255 * 3) |> String.fromFloat) ++ "px")
 
 
-borderRadiusString : Maybe Int -> String
-borderRadiusString i =
+percentString : Maybe Int -> String
+percentString i =
     i
         |> Maybe.withDefault 0
         |> toFloat
@@ -61,7 +61,8 @@ type alias Memoized =
             , bl : Config
             , br : Config
             }
-        , levelImages : Dict.Dict Int (Html Msg)
+
+        -- , levelImages : Dict.Dict Int (List (Html Msg))
         }
 
 
@@ -73,10 +74,11 @@ generateImage adjustments memoized level pathKey currentPosition config =
             , class currentPosition
             , id pathKey
             , Html.Attributes.style "background-color" (configToRbgString config)
-            , Html.Attributes.style "border-top-left-radius" (List.getAt 3 config |> borderRadiusString)
-            , Html.Attributes.style "border-top-right-radius" (List.getAt 4 config |> borderRadiusString)
-            , Html.Attributes.style "border-bottom-left-radius" (List.getAt 5 config |> borderRadiusString)
-            , Html.Attributes.style "border-bottom-right-radius" (List.getAt 6 config |> borderRadiusString)
+
+            -- , Html.Attributes.style "border-top-left-radius" (List.getAt 3 config |> borderRadiusString)
+            -- , Html.Attributes.style "border-top-right-radius" (List.getAt 4 config |> borderRadiusString)
+            -- , Html.Attributes.style "border-bottom-left-radius" (List.getAt 5 config |> borderRadiusString)
+            -- , Html.Attributes.style "border-bottom-right-radius" (List.getAt 6 config |> borderRadiusString)
             ]
             []
         , memoized
@@ -88,19 +90,14 @@ generateImage adjustments memoized level pathKey currentPosition config =
                 Keyed.node "div"
                     [ class "box"
                     , class currentPosition
-                    , Html.Attributes.style "background-color" (configToRbgString config)
+                    , Html.Attributes.style "border-style" "solid"
+                    , Html.Attributes.style "border-color" (configToRbgString config)
+                    , Html.Attributes.style "border-left-width" (List.getAt 3 config |> borderWidthString)
+                    , Html.Attributes.style "border-right-width" (List.getAt 4 config |> borderWidthString)
+                    , Html.Attributes.style "border-top-width" (List.getAt 5 config |> borderWidthString)
+                    , Html.Attributes.style "border-bottom-width" (List.getAt 6 config |> borderWidthString)
                     ]
-                    [ ( pathKey ++ "-outer"
-                      , Keyed.node "div"
-                            [ class "outer"
-                            , Html.Attributes.style "border-top-left-radius" (List.getAt 3 config |> borderRadiusString)
-                            , Html.Attributes.style "border-top-right-radius" (List.getAt 4 config |> borderRadiusString)
-                            , Html.Attributes.style "border-bottom-left-radius" (List.getAt 5 config |> borderRadiusString)
-                            , Html.Attributes.style "border-bottom-right-radius" (List.getAt 6 config |> borderRadiusString)
-                            ]
-                            subImages
-                      )
-                    ]
+                    subImages
 
             generateImageLevel configs =
                 let
@@ -146,24 +143,24 @@ generateImage adjustments memoized level pathKey currentPosition config =
                 )
         in
         case Dict.get config memoized of
-            Just { adjust, levelImages } ->
-                case Dict.get level levelImages of
-                    Just image ->
-                        ( image, memoized )
+            Just { adjust } ->
+                -- case Dict.get level levelImages of
+                --     Just image ->
+                --         ( image, memoized )
+                --     Nothing ->
+                let
+                    ( image, returnedMemoized ) =
+                        generateImageLevel adjust
 
-                    Nothing ->
-                        let
-                            ( image, returnedMemoized ) =
-                                generateImageLevel adjust
+                    newMemoized =
+                        Dict.insert config
+                            { adjust = adjust
 
-                            newMemoized =
-                                Dict.insert config
-                                    { adjust = adjust
-                                    , levelImages = Dict.insert level image levelImages
-                                    }
-                                    returnedMemoized
-                        in
-                        ( image, newMemoized )
+                            -- , levelImages = Dict.insert level image levelImages
+                            }
+                            returnedMemoized
+                in
+                ( image, newMemoized )
 
             Nothing ->
                 let
@@ -180,7 +177,8 @@ generateImage adjustments memoized level pathKey currentPosition config =
                     newMemoized =
                         Dict.insert config
                             { adjust = adjust
-                            , levelImages = Dict.singleton level image
+
+                            -- , levelImages = Dict.singleton level image
                             }
                             returnedMemoized
                 in
