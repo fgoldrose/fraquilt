@@ -42,10 +42,17 @@ configToBorderStyle : Config -> List (Html.Attribute Msg)
 configToBorderStyle list =
     case list of
         l :: r :: t :: b :: _ ->
-            [ Html.Attributes.style "border-left-width" (String.fromInt l ++ "px")
-            , Html.Attributes.style "border-right-width" (String.fromInt r ++ "px")
-            , Html.Attributes.style "border-top-width" (String.fromInt t ++ "px")
-            , Html.Attributes.style "border-bottom-width" (String.fromInt b ++ "px")
+            [ -- Html.Attributes.style "border-left-width" (String.fromInt l ++ "px")
+              Html.Attributes.style "border-top-left-radius" (String.fromInt r ++ "%")
+
+            --, Html.Attributes.style "border-right-width" (String.fromInt r ++ "px")
+            , Html.Attributes.style "border-bottom-right-radius" (String.fromInt r ++ "%")
+
+            -- , Html.Attributes.style "border-top-width" (String.fromInt t ++ "px")
+            , Html.Attributes.style "border-top-right-radius" (String.fromInt t ++ "%")
+
+            --, Html.Attributes.style "border-bottom-width" (String.fromInt b ++ "px")
+            , Html.Attributes.style "border-bottom-left-radius" (String.fromInt b ++ "%")
             ]
 
         _ ->
@@ -92,11 +99,13 @@ generateImage : ConfigParams -> ConfigParams -> Int -> String -> String -> ( Htm
 generateImage colorConfigParams borderConfigParams level pathKey currentPosition =
     if level == 0 then
         ( div
-            [ class "box"
-            , class currentPosition
-            , id pathKey
-            , Html.Attributes.style "background-color" (configToRbgString colorConfigParams.config)
-            ]
+            ([ class "box"
+             , class currentPosition
+             , id pathKey
+             , Html.Attributes.style "background-color" (configToRbgString colorConfigParams.config)
+             ]
+                ++ configToBorderStyle borderConfigParams.config
+            )
             []
         , colorConfigParams
         , borderConfigParams
@@ -108,11 +117,12 @@ generateImage colorConfigParams borderConfigParams level pathKey currentPosition
                 Keyed.node "div"
                     ([ class "box"
                      , class currentPosition
-                     , Html.Attributes.style "border-style" "solid"
-                     , Html.Attributes.style "border-color" (configToRbgString colorConfigParams.config)
+
+                     --  , Html.Attributes.style "border-style" "solid"
+                     --  , Html.Attributes.style "border-color" (configToRbgString colorConfigParams.config)
                      , Html.Attributes.style "background-color" (configToRbgString colorConfigParams.config)
                      ]
-                        ++ configToBorderStyle borderConfigParams.config
+                     -- ++ configToBorderStyle borderConfigParams.config
                     )
                     subImages
 
@@ -223,6 +233,34 @@ randomVariables n =
     Random.list n (Random.int 0 255)
 
 
+randomizeColors : Int -> Random.Seed -> ( ConfigParams, Random.Seed )
+randomizeColors numberOfVariables seed =
+    let
+        ( adjustments, seedAfterAdustments ) =
+            Random.step (randomizeAdjustments numberOfVariables) seed
+
+        ( newInitialColor, newSeed ) =
+            Random.step (randomVariables numberOfVariables) seedAfterAdustments
+    in
+    ( { adjustments = adjustments, config = newInitialColor, memoized = Dict.empty }
+    , newSeed
+    )
+
+
+randomizeBorder : Int -> Random.Seed -> ( ConfigParams, Random.Seed )
+randomizeBorder numberOfVariables seed =
+    let
+        ( borderAdjustments, seed1 ) =
+            Random.step (randomizeAdjustments numberOfVariables) seed
+
+        ( newInitial, seed2 ) =
+            Random.step (Random.list 4 (Random.int 0 100)) seed1
+    in
+    ( { adjustments = borderAdjustments, config = newInitial, memoized = Dict.empty }
+    , seed2
+    )
+
+
 viewFrameworks : Model -> List ( String, Html Msg )
 viewFrameworks model =
     [ ( String.fromInt model.iteration
@@ -300,20 +338,17 @@ init flags =
         seed =
             Random.initialSeed flags.randomSeed
 
-        ( adjustments, seedAfterAdustments ) =
-            Random.step (randomizeAdjustments numberOfVariables) seed
+        ( colorParams, seed1 ) =
+            randomizeColors numberOfVariables seed
 
-        ( borderAdjustments, seedAfterBorderAdjustments ) =
-            Random.step (randomizeAdjustments 4) seedAfterAdustments
-
-        ( newInitialColor, seedAfterColor ) =
-            Random.step (randomVariables numberOfVariables) seedAfterBorderAdjustments
+        ( borderParams, seed2 ) =
+            randomizeBorder 4 seed1
     in
     ( { iteration = 0
-      , colorParams = { adjustments = adjustments, config = newInitialColor, memoized = Dict.empty }
-      , borderParams = { adjustments = borderAdjustments, config = [ 1, 2, 3, 4 ], memoized = Dict.empty }
+      , colorParams = colorParams
+      , borderParams = borderParams
       , level = level
-      , randomSeed = seedAfterColor
+      , randomSeed = seed2
       , numberOfVariables = numberOfVariables
       , levelAnimationDirection = Up
       , doNextAnimationFrame = []
@@ -335,20 +370,11 @@ update msg model =
     case msg of
         Randomize ->
             let
-                ( randomizedAdjustments, seedAfterAdustments ) =
-                    Random.step (randomizeAdjustments model.numberOfVariables) model.randomSeed
+                ( newColorParams, seed1 ) =
+                    randomizeColors model.numberOfVariables model.randomSeed
 
-                ( borderAdjustments, seedAfterBorderAdjustments ) =
-                    Random.step (randomizeAdjustments 4) seedAfterAdustments
-
-                ( newInitialColor, newSeed ) =
-                    Random.step (randomVariables model.numberOfVariables) seedAfterBorderAdjustments
-
-                newColorParams =
-                    { adjustments = randomizedAdjustments, config = newInitialColor, memoized = Dict.empty }
-
-                newBorderParams =
-                    { adjustments = borderAdjustments, config = [ 1, 2, 3, 4 ], memoized = Dict.empty }
+                ( newBorderParams, seed2 ) =
+                    randomizeBorder 4 seed1
 
                 ( _, memoizeColors, memoizeBorders ) =
                     generateImage newColorParams newBorderParams maxLevel ("level-" ++ String.fromInt maxLevel) "outer"
@@ -356,7 +382,7 @@ update msg model =
             ( { model
                 | colorParams = memoizeColors
                 , borderParams = memoizeBorders
-                , randomSeed = newSeed
+                , randomSeed = seed2
                 , iteration = model.iteration + 1
               }
             , Cmd.none
@@ -368,7 +394,7 @@ update msg model =
                     Random.step (randomizeAdjustments 4) model.randomSeed
 
                 ( newInitial, seed2 ) =
-                    Random.step (Random.List.shuffle [ 1, 2, 3, 4 ]) seed1
+                    Random.step (Random.list 4 (Random.int 0 100)) seed1
             in
             ( { model
                 | borderParams = { adjustments = borderAdjustments, config = newInitial, memoized = Dict.empty }
@@ -464,14 +490,15 @@ main =
         { init = init
         , view = view
         , update = update
-        , subscriptions = \_ -> Time.every 300 (\_ -> RandomizeBorder)
+        , subscriptions =
+            -- \_ -> Time.every 300 (\_ -> RandomizeBorder)
+            \{ doNextAnimationFrame } ->
+                if List.isEmpty doNextAnimationFrame then
+                    Sub.none
 
-        -- \{ doNextAnimationFrame } ->
-        --     if List.isEmpty doNextAnimationFrame then
-        --         Sub.none
-        --     else
-        --         Browser.Events.onAnimationFrameDelta
-        --             (\_ ->
-        --                 GotNextAnimationFrame
-        --             )
+                else
+                    Browser.Events.onAnimationFrameDelta
+                        (\_ ->
+                            GotNextAnimationFrame
+                        )
         }
