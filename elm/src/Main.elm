@@ -13,6 +13,7 @@ import List.Extra as List
 import Random
 import Random.List
 import Task
+import Time
 
 
 type alias Adjustments a =
@@ -233,14 +234,8 @@ viewFrameworks model =
             , Html.Attributes.style "left" "0"
             ]
             [ generateImage
-                { adjustments = model.adjustments
-                , memoized = Dict.empty
-                , config = model.initialVariables
-                }
-                { adjustments = model.borderAdjustments
-                , memoized = Dict.empty
-                , config = [ 0, 1, 2, 3 ]
-                }
+                model.colorParams
+                model.borderParams
                 maxLevel
                 ("level-" ++ String.fromInt maxLevel)
                 "outer"
@@ -268,10 +263,9 @@ view model =
 
 type alias Model =
     { iteration : Int
-    , adjustments : Adjustments Config
-    , borderAdjustments : Adjustments Config
+    , colorParams : ConfigParams
+    , borderParams : ConfigParams
     , level : Int
-    , initialVariables : Config
     , randomSeed : Random.Seed
     , numberOfVariables : Int -- Length of list
     , levelAnimationDirection : Direction
@@ -291,7 +285,7 @@ type alias Flags =
 
 maxLevel : Int
 maxLevel =
-    7
+    6
 
 
 init : Flags -> ( Model, Cmd Msg )
@@ -316,10 +310,9 @@ init flags =
             Random.step (randomVariables numberOfVariables) seedAfterBorderAdjustments
     in
     ( { iteration = 0
-      , adjustments = adjustments
-      , borderAdjustments = borderAdjustments
+      , colorParams = { adjustments = adjustments, config = newInitialColor, memoized = Dict.empty }
+      , borderParams = { adjustments = borderAdjustments, config = [ 1, 2, 3, 4 ], memoized = Dict.empty }
       , level = level
-      , initialVariables = newInitialColor
       , randomSeed = seedAfterColor
       , numberOfVariables = numberOfVariables
       , levelAnimationDirection = Up
@@ -331,6 +324,7 @@ init flags =
 
 type Msg
     = Randomize
+    | RandomizeBorder
     | AnimateLevel
     | DoNextAnimationFrame Msg
     | GotNextAnimationFrame
@@ -349,12 +343,36 @@ update msg model =
 
                 ( newInitialColor, newSeed ) =
                     Random.step (randomVariables model.numberOfVariables) seedAfterBorderAdjustments
+
+                newColorParams =
+                    { adjustments = randomizedAdjustments, config = newInitialColor, memoized = Dict.empty }
+
+                newBorderParams =
+                    { adjustments = borderAdjustments, config = [ 1, 2, 3, 4 ], memoized = Dict.empty }
+
+                ( _, memoizeColors, memoizeBorders ) =
+                    generateImage newColorParams newBorderParams maxLevel ("level-" ++ String.fromInt maxLevel) "outer"
             in
             ( { model
-                | adjustments = randomizedAdjustments
-                , borderAdjustments = borderAdjustments
-                , initialVariables = newInitialColor
+                | colorParams = memoizeColors
+                , borderParams = memoizeBorders
                 , randomSeed = newSeed
+                , iteration = model.iteration + 1
+              }
+            , Cmd.none
+            )
+
+        RandomizeBorder ->
+            let
+                ( borderAdjustments, seed1 ) =
+                    Random.step (randomizeAdjustments 4) model.randomSeed
+
+                ( newInitial, seed2 ) =
+                    Random.step (Random.List.shuffle [ 1, 2, 3, 4 ]) seed1
+            in
+            ( { model
+                | borderParams = { adjustments = borderAdjustments, config = newInitial, memoized = Dict.empty }
+                , randomSeed = seed2
                 , iteration = model.iteration + 1
               }
             , Cmd.none
@@ -446,14 +464,14 @@ main =
         { init = init
         , view = view
         , update = update
-        , subscriptions =
-            \{ doNextAnimationFrame } ->
-                if List.isEmpty doNextAnimationFrame then
-                    Sub.none
+        , subscriptions = \_ -> Time.every 300 (\_ -> RandomizeBorder)
 
-                else
-                    Browser.Events.onAnimationFrameDelta
-                        (\_ ->
-                            GotNextAnimationFrame
-                        )
+        -- \{ doNextAnimationFrame } ->
+        --     if List.isEmpty doNextAnimationFrame then
+        --         Sub.none
+        --     else
+        --         Browser.Events.onAnimationFrameDelta
+        --             (\_ ->
+        --                 GotNextAnimationFrame
+        --             )
         }
