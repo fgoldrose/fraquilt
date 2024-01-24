@@ -1,0 +1,13 @@
+{
+  "name": "fraquilt",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {},
+  "keywords": [],
+  "author": "Fred Goldstein-Rose",
+  "license": "ISC",
+  "devDependencies": {
+    "@parcel/transformer-elm": "^2.11.0",
+    "elm": "^0.19.1-5"
+  }
+}
