@@ -1,13 +1,14 @@
 port module Settings exposing (..)
 
 import Array exposing (Array)
-import ColorAdjustments exposing (ColorAdjustments, view)
+import ColorAdjustments exposing (ColorAdjustments)
 import Html exposing (Html)
 import Html.Attributes as HA
 import Html.Events as HE
 import Json.Encode as Encode
 import Messages exposing (Msg(..))
 import Random
+import Types exposing (Quadrant(..), SelectionState(..), getSelectedForQuadrant)
 
 
 port renderImage : Encode.Value -> Cmd msg
@@ -20,6 +21,7 @@ type alias Settings =
     , tr : ColorAdjustments
     , bl : ColorAdjustments
     , br : ColorAdjustments
+    , selectionState : SelectionState
     }
 
 
@@ -142,12 +144,20 @@ viewColorAdjustmentGrid settings =
     Html.div
         [ HA.style "display" "grid"
         , HA.style "grid-template-columns" "100px 100px"
-        , HA.style "grid-gap" "20px"
+        , HA.style "grid-gap" "30px"
         ]
         [ ColorAdjustments.view settings.tl
+            TopLeft
+            (getSelectedForQuadrant TopLeft settings.selectionState)
         , ColorAdjustments.view settings.tr
+            TopRight
+            (getSelectedForQuadrant TopRight settings.selectionState)
         , ColorAdjustments.view settings.bl
+            BottomLeft
+            (getSelectedForQuadrant BottomLeft settings.selectionState)
         , ColorAdjustments.view settings.br
+            BottomRight
+            (getSelectedForQuadrant BottomRight settings.selectionState)
         ]
 
 
@@ -203,6 +213,7 @@ random { numVars, level } =
             , tr = tr
             , bl = bl
             , br = br
+            , selectionState = NoneSelected
             }
         )
         (Random.map Array.fromList (Random.list numVars (Random.int 0 255)))

@@ -3,18 +3,35 @@ module ColorAdjustments exposing (..)
 import Array exposing (Array)
 import Html exposing (Html)
 import Html.Attributes as HA
+import Html.Events as HE
 import Json.Encode as Encode
+import Messages exposing (Msg(..))
 import Random
 import Svg exposing (Svg)
 import Svg.Attributes
+import Types exposing (Quadrant(..))
 
 
 type ColorAdjustments
     = ColorAdjustments (Array Int)
 
 
-view : ColorAdjustments -> Html msg
-view colorAdjustments =
+getNumVars : ColorAdjustments -> Int
+getNumVars (ColorAdjustments colorArray) =
+    Array.length colorArray
+
+
+setNewLine : Int -> Int -> ColorAdjustments -> ColorAdjustments
+setNewLine fromIndex toIndex (ColorAdjustments colorArray) =
+    let
+        newColorArray =
+            Array.set fromIndex toIndex colorArray
+    in
+    ColorAdjustments newColorArray
+
+
+view : ColorAdjustments -> Quadrant -> Maybe Int -> Html Msg
+view colorAdjustments quadrant maybeSelectedIndex =
     let
         numVars =
             getNumVars colorAdjustments
@@ -22,11 +39,8 @@ view colorAdjustments =
         listRange =
             List.range 0 (numVars - 1)
 
-        leftDots =
-            List.map (dot { side = Left, totalVars = numVars }) listRange
-
-        rightDots =
-            List.map (dot { side = Right, totalVars = numVars }) listRange
+        pixelSize =
+            ((20 * numVars) |> String.fromInt) ++ "px"
     in
     Html.div
         [ HA.style "background-color" "rgb(200, 200, 200)"
@@ -36,15 +50,29 @@ view colorAdjustments =
         [ Html.div
             [ HA.style "position" "relative"
             , HA.style "width" "100px"
-            , HA.style "height" "100px"
+            , HA.style "height" pixelSize
             ]
-            (lines colorAdjustments :: leftDots ++ rightDots)
+            (lines colorAdjustments
+                :: List.map
+                    (dot
+                        { side = Left
+                        , totalVars = numVars
+                        , quadrant = quadrant
+                        , maybeSelectedIndex = maybeSelectedIndex
+                        }
+                    )
+                    listRange
+                ++ List.map
+                    (dot
+                        { side = Right
+                        , totalVars = numVars
+                        , quadrant = quadrant
+                        , maybeSelectedIndex = maybeSelectedIndex
+                        }
+                    )
+                    listRange
+            )
         ]
-
-
-getNumVars : ColorAdjustments -> Int
-getNumVars (ColorAdjustments colorArray) =
-    Array.length colorArray
 
 
 getTopPositionForIndex : { totalVars : Int, index : Int } -> String
@@ -61,12 +89,19 @@ type Side
     | Right
 
 
-dot : { side : Side, totalVars : Int } -> Int -> Html msg
-dot { side, totalVars } index =
+dot :
+    { side : Side
+    , totalVars : Int
+    , quadrant : Quadrant
+    , maybeSelectedIndex : Maybe Int
+    }
+    -> Int
+    -> Html Msg
+dot { side, totalVars, quadrant, maybeSelectedIndex } index =
     Html.div
         ([ HA.style "background-color" "black"
-         , HA.style "width" "10px"
-         , HA.style "height" "10px"
+         , HA.style "width" "20px"
+         , HA.style "height" "20px"
          , HA.style "border-radius" "100%"
          , HA.style "position" "absolute"
          , HA.style "top"
@@ -78,12 +113,35 @@ dot { side, totalVars } index =
                     Left ->
                         [ HA.style "left" "0"
                         , HA.style "transform" "translate(-50%, -50%)"
+                        , HA.style "cursor" "pointer"
                         ]
+                            ++ (case maybeSelectedIndex of
+                                    Just selectedIndex ->
+                                        if selectedIndex == index then
+                                            [ HA.style "background-color" "rgb(0, 100, 255)"
+                                            , HA.style "outline" "2px solid rgba(0, 100, 255, 0.5)"
+                                            ]
+
+                                        else
+                                            [ HE.onClick (StartSelection quadrant index) ]
+
+                                    Nothing ->
+                                        [ HE.onClick (StartSelection quadrant index) ]
+                               )
 
                     Right ->
                         [ HA.style "right" "0"
                         , HA.style "transform" "translate(50%, -50%)"
                         ]
+                            ++ (case maybeSelectedIndex of
+                                    Just _ ->
+                                        [ HA.style "cursor" "pointer"
+                                        , HE.onClick (EndSelection index)
+                                        ]
+
+                                    Nothing ->
+                                        []
+                               )
                )
         )
         []
@@ -97,12 +155,12 @@ lines (ColorAdjustments colorAdjustments) =
     in
     Html.div
         [ HA.style "position" "absolute"
-        , HA.style "inset" "-5px 0px"
+        , HA.style "inset" "0"
         ]
         [ Svg.svg
             [ Svg.Attributes.width "100%"
             , Svg.Attributes.height "100%"
-            , Svg.Attributes.viewBox "0 0 100 100"
+            , HA.style "overflow" "visible"
             ]
             (List.filterMap
                 (\fromIndex ->

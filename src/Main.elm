@@ -9,6 +9,7 @@ import Html.Events as HE
 import Messages exposing (Msg(..))
 import Random
 import Settings exposing (Settings)
+import Types exposing (Quadrant(..), SelectionState(..))
 
 
 type alias Model =
@@ -86,6 +87,78 @@ update msg ({ settings, randomSeed } as model) =
               , randomSeed = newSeed
               }
             , Settings.render randomSettings
+            )
+
+        StartSelection quadrant index ->
+            ( { model
+                | settings =
+                    { settings
+                        | selectionState =
+                            case quadrant of
+                                TopLeft ->
+                                    TLSelected index
+
+                                TopRight ->
+                                    TRSelected index
+
+                                BottomLeft ->
+                                    BLSelected index
+
+                                BottomRight ->
+                                    BRSelected index
+                    }
+              }
+            , Cmd.none
+            )
+
+        EndSelection endIndex ->
+            let
+                newSettings =
+                    case settings.selectionState of
+                        TLSelected startIndex ->
+                            { settings
+                                | tl =
+                                    settings.tl
+                                        |> ColorAdjustments.setNewLine
+                                            startIndex
+                                            endIndex
+                            }
+
+                        TRSelected startIndex ->
+                            { settings
+                                | tr =
+                                    settings.tr
+                                        |> ColorAdjustments.setNewLine
+                                            startIndex
+                                            endIndex
+                            }
+
+                        BLSelected startIndex ->
+                            { settings
+                                | bl =
+                                    settings.bl
+                                        |> ColorAdjustments.setNewLine
+                                            startIndex
+                                            endIndex
+                            }
+
+                        BRSelected startIndex ->
+                            { settings
+                                | br =
+                                    settings.br
+                                        |> ColorAdjustments.setNewLine
+                                            startIndex
+                                            endIndex
+                            }
+
+                        NoneSelected ->
+                            settings
+            in
+            ( { model
+                | settings =
+                    { newSettings | selectionState = NoneSelected }
+              }
+            , Settings.render newSettings
             )
 
 
