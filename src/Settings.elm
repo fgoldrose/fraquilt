@@ -43,15 +43,39 @@ viewEditSettings :
     { settings : Settings
     , updateInitialVar : Int -> String -> msg
     , changeLevel : String -> msg
+    , changeNumVars : Int -> msg
     }
     -> Html msg
-viewEditSettings { settings, updateInitialVar, changeLevel } =
+viewEditSettings { settings, updateInitialVar, changeLevel, changeNumVars } =
     let
+        numVars =
+            Array.length settings.initialVariables
+
+        numberOfVariables =
+            Html.div
+                [ HA.style "display" "flex"
+                , HA.style "flex-direction" "column"
+                , HA.style "align-items" "center"
+                , HA.style "gap" "10px"
+                ]
+                [ Html.span [] [ Html.text "Number of variables" ]
+                , Html.div
+                    [ HA.style "display" "flex"
+                    , HA.style "flex-direction" "row"
+                    , HA.style "align-items" "center"
+                    , HA.style "gap" "10px"
+                    ]
+                    [ Html.button [ HE.onClick (changeNumVars (numVars - 1)) ] [ Html.text "-" ]
+                    , Html.span [] [ Html.text (String.fromInt numVars) ]
+                    , Html.button [ HE.onClick (changeNumVars (numVars + 1)) ] [ Html.text "+" ]
+                    ]
+                ]
+
         colorAdjustmentsGrid =
             Html.div
                 [ HA.style "display" "grid"
-                , HA.style "grid-template-columns" "1fr 1fr"
-                , HA.style "grid-gap" "50px"
+                , HA.style "grid-template-columns" "100px 100px"
+                , HA.style "grid-gap" "20px"
                 ]
                 [ ColorAdjustments.view settings.tl
                 , ColorAdjustments.view settings.tr
@@ -66,36 +90,37 @@ viewEditSettings { settings, updateInitialVar, changeLevel } =
                 , HA.style "align-items" "center"
                 , HA.style "gap" "10px"
                 ]
-                (List.indexedMap
-                    (\index initVar ->
-                        let
-                            id =
-                                "initVar-" ++ String.fromInt index
-                        in
-                        Html.div
-                            [ HA.style "display" "flex"
-                            , HA.style "flex-direction" "row"
-                            , HA.style "align-items" "center"
-                            , HA.style "gap" "5px"
-                            ]
-                            [ Html.label
-                                [ HA.for id
-                                , HA.style "width" "30px"
-                                , HA.style "text-align" "right"
+                (Html.span [] [ Html.text "Initial values" ]
+                    :: List.indexedMap
+                        (\index initVar ->
+                            let
+                                id =
+                                    "initVar-" ++ String.fromInt index
+                            in
+                            Html.div
+                                [ HA.style "display" "flex"
+                                , HA.style "flex-direction" "row"
+                                , HA.style "align-items" "center"
+                                , HA.style "gap" "5px"
                                 ]
-                                [ Html.text (String.fromInt initVar) ]
-                            , Html.input
-                                [ HA.id id
-                                , HA.type_ "range"
-                                , HA.min "0"
-                                , HA.max "255"
-                                , HA.value (String.fromInt initVar)
-                                , HE.onInput (updateInitialVar index)
+                                [ Html.label
+                                    [ HA.for id
+                                    , HA.style "width" "30px"
+                                    , HA.style "text-align" "right"
+                                    ]
+                                    [ Html.text (String.fromInt initVar) ]
+                                , Html.input
+                                    [ HA.id id
+                                    , HA.type_ "range"
+                                    , HA.min "0"
+                                    , HA.max "255"
+                                    , HA.value (String.fromInt initVar)
+                                    , HE.onInput (updateInitialVar index)
+                                    ]
+                                    []
                                 ]
-                                []
-                            ]
-                    )
-                    (Array.toList settings.initialVariables)
+                        )
+                        (Array.toList settings.initialVariables)
                 )
 
         level =
@@ -141,11 +166,33 @@ viewEditSettings { settings, updateInitialVar, changeLevel } =
                 ]
     in
     Html.div
-        [ HA.style "display" "flex"
-        , HA.style "flex-direction" "column"
-        , HA.style "gap" "50px"
+        [ HA.style "height" "100%"
+        , HA.style "flex-grow" "2"
+        , HA.style "overflow-y" "scroll"
+        , HA.style "background-color" "rgb(240, 240, 240)"
         ]
-        [ colorAdjustmentsGrid, initialVars, level ]
+        [ Html.div
+            [ HA.style "display" "flex"
+            , HA.style "flex-direction" "column"
+            , HA.style "align-items" "center"
+            , HA.style "gap" "20px"
+            , HA.style "margin" "50px 10px"
+            ]
+            [ Html.div
+                [ HA.style "font-size" "20px"
+                , HA.style "font-weight" "bold"
+                ]
+                [ Html.text "Configuration" ]
+            , numberOfVariables
+            , colorAdjustmentsGrid
+            , Html.div
+                [ HA.style "display" "flex"
+                , HA.style "flex-direction" "row"
+                , HA.style "justify-content" "space-between"
+                ]
+                [ initialVars, level ]
+            ]
+        ]
 
 
 random : { numVars : Int, level : Int } -> Random.Generator Settings

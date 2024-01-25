@@ -21,6 +21,7 @@ type Msg
     | Randomize
     | UpdateInitialVar Int String
     | ChangeLevel String
+    | ChangeNumberOfVariables Int
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -34,7 +35,9 @@ update msg ({ settings, randomSeed } as model) =
                 ( randomSettings, newSeed ) =
                     Random.step
                         (Settings.random
-                            { numVars = 4, level = settings.level }
+                            { numVars = Array.length settings.initialVariables
+                            , level = settings.level
+                            }
                         )
                         randomSeed
             in
@@ -77,6 +80,21 @@ update msg ({ settings, randomSeed } as model) =
                     , Settings.render newSettings
                     )
 
+        ChangeNumberOfVariables numVars ->
+            let
+                ( randomSettings, newSeed ) =
+                    Random.step
+                        (Settings.random
+                            { numVars = numVars, level = settings.level }
+                        )
+                        randomSeed
+            in
+            ( { settings = randomSettings
+              , randomSeed = newSeed
+              }
+            , Settings.render randomSettings
+            )
+
 
 view : Model -> Html Msg
 view model =
@@ -84,31 +102,35 @@ view model =
         [ HA.style "display" "flex"
         , HA.style "flex-direction" "row"
         , HA.style "align-items" "center"
-        , HA.style "justify-content" "center"
+        , HA.style "justify-content" "space-between"
         , HA.style "height" "100vh"
-        , HA.style "gap" "16px"
+        , HA.style "flex-wrap" "wrap"
+        , HA.style "font-family" "sans-serif"
         ]
-        [ Settings.viewEditSettings
-            { settings =
-                model.settings
-            , updateInitialVar = UpdateInitialVar
-            , changeLevel = ChangeLevel
-            }
-        , Html.div
-            [ HA.style "width" "512px"
-            , HA.style "height" "512px"
-            , HA.style "cursor" "pointer"
-            , HE.onClick Randomize
+        [ Html.div
+            [ HA.style "cursor" "pointer"
+            , HA.style "margin" "10px"
+            , HA.style "display" "flex"
+            , HA.style "align-items" "center"
+            , HA.style "justify-content" "center"
+            , HA.style "flex-grow" "1"
             ]
             [ Html.canvas
                 [ HA.id "canvas"
                 , HA.style "image-rendering" "pixelated"
-                , HA.style "width" "100%"
-                , HA.style "height" "100%"
+                , HA.style "width" "512px"
+                , HA.style "height" "512px"
                 , HA.style "border" "2px solid black"
+                , HE.onClick Randomize
                 ]
                 []
             ]
+        , Settings.viewEditSettings
+            { settings = model.settings
+            , updateInitialVar = UpdateInitialVar
+            , changeLevel = ChangeLevel
+            , changeNumVars = ChangeNumberOfVariables
+            }
         ]
 
 
