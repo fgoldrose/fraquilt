@@ -6,6 +6,7 @@ import ColorAdjustments exposing (ColorAdjustments)
 import Html exposing (Html)
 import Html.Attributes as HA
 import Html.Events as HE
+import Messages exposing (Msg(..))
 import Random
 import Settings exposing (Settings)
 
@@ -14,14 +15,6 @@ type alias Model =
     { settings : Settings
     , randomSeed : Random.Seed
     }
-
-
-type Msg
-    = NoOp
-    | Randomize
-    | UpdateInitialVar Int String
-    | ChangeLevel String
-    | ChangeNumberOfVariables Int
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -134,12 +127,7 @@ view model =
                     []
                 ]
             ]
-        , Settings.viewEditSettings
-            { settings = model.settings
-            , updateInitialVar = UpdateInitialVar
-            , changeLevel = ChangeLevel
-            , changeNumVars = ChangeNumberOfVariables
-            }
+        , Settings.viewEditSettings model.settings
         ]
 
 

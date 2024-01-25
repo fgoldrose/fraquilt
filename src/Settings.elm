@@ -1,11 +1,12 @@
 port module Settings exposing (..)
 
 import Array exposing (Array)
-import ColorAdjustments exposing (ColorAdjustments)
+import ColorAdjustments exposing (ColorAdjustments, view)
 import Html exposing (Html)
 import Html.Attributes as HA
 import Html.Events as HE
 import Json.Encode as Encode
+import Messages exposing (Msg(..))
 import Random
 
 
@@ -39,132 +40,8 @@ render settings =
             ]
 
 
-viewEditSettings :
-    { settings : Settings
-    , updateInitialVar : Int -> String -> msg
-    , changeLevel : String -> msg
-    , changeNumVars : Int -> msg
-    }
-    -> Html msg
-viewEditSettings { settings, updateInitialVar, changeLevel, changeNumVars } =
-    let
-        numVars =
-            Array.length settings.initialVariables
-
-        numberOfVariables =
-            Html.div
-                [ HA.style "display" "flex"
-                , HA.style "flex-direction" "column"
-                , HA.style "align-items" "center"
-                , HA.style "gap" "10px"
-                ]
-                [ Html.span [] [ Html.text "Number of variables" ]
-                , Html.div
-                    [ HA.style "display" "flex"
-                    , HA.style "flex-direction" "row"
-                    , HA.style "align-items" "center"
-                    , HA.style "gap" "10px"
-                    ]
-                    [ Html.button [ HE.onClick (changeNumVars (numVars - 1)) ] [ Html.text "-" ]
-                    , Html.span [] [ Html.text (String.fromInt numVars) ]
-                    , Html.button [ HE.onClick (changeNumVars (numVars + 1)) ] [ Html.text "+" ]
-                    ]
-                ]
-
-        colorAdjustmentsGrid =
-            Html.div
-                [ HA.style "display" "grid"
-                , HA.style "grid-template-columns" "100px 100px"
-                , HA.style "grid-gap" "20px"
-                ]
-                [ ColorAdjustments.view settings.tl
-                , ColorAdjustments.view settings.tr
-                , ColorAdjustments.view settings.bl
-                , ColorAdjustments.view settings.br
-                ]
-
-        initialVars =
-            Html.div
-                [ HA.style "display" "flex"
-                , HA.style "flex-direction" "column"
-                , HA.style "align-items" "center"
-                , HA.style "gap" "10px"
-                ]
-                (Html.span [] [ Html.text "Initial values" ]
-                    :: List.indexedMap
-                        (\index initVar ->
-                            let
-                                id =
-                                    "initVar-" ++ String.fromInt index
-                            in
-                            Html.div
-                                [ HA.style "display" "flex"
-                                , HA.style "flex-direction" "row"
-                                , HA.style "align-items" "center"
-                                , HA.style "gap" "5px"
-                                ]
-                                [ Html.label
-                                    [ HA.for id
-                                    , HA.style "width" "30px"
-                                    , HA.style "text-align" "right"
-                                    ]
-                                    [ Html.text (String.fromInt initVar) ]
-                                , Html.input
-                                    [ HA.id id
-                                    , HA.type_ "range"
-                                    , HA.min "0"
-                                    , HA.max "255"
-                                    , HA.value (String.fromInt initVar)
-                                    , HE.onInput (updateInitialVar index)
-                                    ]
-                                    []
-                                ]
-                        )
-                        (Array.toList settings.initialVariables)
-                )
-
-        level =
-            Html.div
-                [ HA.style "display" "flex"
-                , HA.style "flex-direction" "column"
-                , HA.style "align-items" "center"
-                , HA.style "gap" "10px"
-                ]
-                [ Html.span [] [ Html.text "Level" ]
-                , Html.div
-                    [ HA.style "display" "flex"
-                    , HA.style "flex-direction" "row"
-                    , HA.style "align-items" "center"
-                    , HA.style "gap" "5px"
-                    ]
-                    [ Html.label
-                        [ HA.for "level"
-                        , HA.style "width" "30px"
-                        , HA.style "text-align" "right"
-                        ]
-                        [ Html.text (String.fromInt settings.level) ]
-                    , Html.input
-                        [ HA.id "level"
-                        , HA.type_ "range"
-                        , HA.min "1"
-                        , HA.max "10"
-                        , HA.list "level-markers"
-                        , HA.value (String.fromInt settings.level)
-                        , HE.onInput changeLevel
-                        ]
-                        []
-                    , Html.datalist [ HA.id "level-markers" ]
-                        (List.map
-                            (\l ->
-                                Html.option
-                                    [ HA.value (String.fromInt l) ]
-                                    [ Html.text (String.fromInt l) ]
-                            )
-                            (List.range 1 10)
-                        )
-                    ]
-                ]
-    in
+viewEditSettings : Settings -> Html Msg
+viewEditSettings settings =
     Html.div
         [ HA.style "height" "100%"
         , HA.style "max-height" "100vh"
@@ -184,12 +61,136 @@ viewEditSettings { settings, updateInitialVar, changeLevel, changeNumVars } =
                 , HA.style "font-weight" "bold"
                 ]
                 [ Html.text "Configuration" ]
-            , level
-            , numberOfVariables
-            , colorAdjustmentsGrid
-            , initialVars
+            , viewLevel settings.level
+            , viewNumberOfVariables (Array.length settings.initialVariables)
+            , viewColorAdjustmentGrid settings
+            , viewInitialVars settings.initialVariables
             ]
         ]
+
+
+viewLevel : Int -> Html Msg
+viewLevel level =
+    Html.div
+        [ HA.style "display" "flex"
+        , HA.style "flex-direction" "column"
+        , HA.style "align-items" "center"
+        , HA.style "gap" "10px"
+        ]
+        [ Html.span [] [ Html.text "Level" ]
+        , Html.div
+            [ HA.style "display" "flex"
+            , HA.style "flex-direction" "row"
+            , HA.style "align-items" "center"
+            , HA.style "gap" "5px"
+            ]
+            [ Html.label
+                [ HA.for "level"
+                , HA.style "width" "30px"
+                , HA.style "text-align" "right"
+                ]
+                [ Html.text (String.fromInt level) ]
+            , Html.input
+                [ HA.id "level"
+                , HA.type_ "range"
+                , HA.min "1"
+                , HA.max "10"
+                , HA.list "level-markers"
+                , HA.value (String.fromInt level)
+                , HE.onInput ChangeLevel
+                ]
+                []
+            , Html.datalist [ HA.id "level-markers" ]
+                (List.map
+                    (\l ->
+                        Html.option
+                            [ HA.value (String.fromInt l) ]
+                            [ Html.text (String.fromInt l) ]
+                    )
+                    (List.range 1 10)
+                )
+            ]
+        ]
+
+
+viewNumberOfVariables : Int -> Html Msg
+viewNumberOfVariables numVars =
+    Html.div
+        [ HA.style "display" "flex"
+        , HA.style "flex-direction" "column"
+        , HA.style "align-items" "center"
+        , HA.style "gap" "10px"
+        ]
+        [ Html.span [] [ Html.text "Number of variables" ]
+        , Html.div
+            [ HA.style "display" "flex"
+            , HA.style "flex-direction" "row"
+            , HA.style "align-items" "center"
+            , HA.style "gap" "10px"
+            ]
+            [ Html.button [ HE.onClick (ChangeNumberOfVariables (numVars - 1)) ]
+                [ Html.text "-" ]
+            , Html.span [] [ Html.text (String.fromInt numVars) ]
+            , Html.button [ HE.onClick (ChangeNumberOfVariables (numVars + 1)) ]
+                [ Html.text "+" ]
+            ]
+        ]
+
+
+viewColorAdjustmentGrid : Settings -> Html Msg
+viewColorAdjustmentGrid settings =
+    Html.div
+        [ HA.style "display" "grid"
+        , HA.style "grid-template-columns" "100px 100px"
+        , HA.style "grid-gap" "20px"
+        ]
+        [ ColorAdjustments.view settings.tl
+        , ColorAdjustments.view settings.tr
+        , ColorAdjustments.view settings.bl
+        , ColorAdjustments.view settings.br
+        ]
+
+
+viewInitialVars : Array Int -> Html Msg
+viewInitialVars initialVars =
+    Html.div
+        [ HA.style "display" "flex"
+        , HA.style "flex-direction" "column"
+        , HA.style "align-items" "center"
+        , HA.style "gap" "10px"
+        ]
+        (Html.span [] [ Html.text "Initial values" ]
+            :: List.indexedMap
+                (\index initVar ->
+                    let
+                        id =
+                            "initVar-" ++ String.fromInt index
+                    in
+                    Html.div
+                        [ HA.style "display" "flex"
+                        , HA.style "flex-direction" "row"
+                        , HA.style "align-items" "center"
+                        , HA.style "gap" "5px"
+                        ]
+                        [ Html.label
+                            [ HA.for id
+                            , HA.style "width" "30px"
+                            , HA.style "text-align" "right"
+                            ]
+                            [ Html.text (String.fromInt initVar) ]
+                        , Html.input
+                            [ HA.id id
+                            , HA.type_ "range"
+                            , HA.min "0"
+                            , HA.max "255"
+                            , HA.value (String.fromInt initVar)
+                            , HE.onInput (UpdateInitialVar index)
+                            ]
+                            []
+                        ]
+                )
+                (Array.toList initialVars)
+        )
 
 
 random : { numVars : Int, level : Int } -> Random.Generator Settings
