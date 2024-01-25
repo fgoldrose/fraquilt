@@ -1,6 +1,7 @@
 module Main exposing (..)
 
 import Browser
+import ColorAdjustments exposing (ColorAdjustments)
 import Html exposing (Html)
 import Html.Attributes as HA
 import Html.Events as HE
@@ -44,18 +45,29 @@ update msg model =
 view : Model -> Html Msg
 view model =
     Html.div
-        [ HA.style "width" "512px"
-        , HA.style "height" "512px"
-        , HA.style "cursor" "pointer"
-        , HE.onClick Randomize
+        [ HA.style "display" "flex"
+        , HA.style "flex-direction" "row"
+        , HA.style "align-items" "center"
+        , HA.style "justify-content" "center"
+        , HA.style "height" "100vh"
+        , HA.style "gap" "16px"
         ]
-        [ Html.canvas
-            [ HA.id "canvas"
-            , HA.style "image-rendering" "pixelated"
-            , HA.style "width" "100%"
-            , HA.style "height" "100%"
+        [ Settings.viewEditSettings model.settings
+        , Html.div
+            [ HA.style "width" "512px"
+            , HA.style "height" "512px"
+            , HA.style "cursor" "pointer"
+            , HE.onClick Randomize
             ]
-            []
+            [ Html.canvas
+                [ HA.id "canvas"
+                , HA.style "image-rendering" "pixelated"
+                , HA.style "width" "100%"
+                , HA.style "height" "100%"
+                , HA.style "border" "2px solid black"
+                ]
+                []
+            ]
         ]
 
 

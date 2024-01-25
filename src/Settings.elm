@@ -1,5 +1,8 @@
 port module Settings exposing (..)
 
+import ColorAdjustments exposing (ColorAdjustments)
+import Html exposing (Html)
+import Html.Attributes as HA
 import Json.Encode as Encode
 import Random
 
@@ -10,10 +13,10 @@ port renderImage : Encode.Value -> Cmd msg
 type alias Settings =
     { level : Int
     , initialVariables : List Int
-    , tl : List Int
-    , tr : List Int
-    , bl : List Int
-    , br : List Int
+    , tl : ColorAdjustments
+    , tr : ColorAdjustments
+    , bl : ColorAdjustments
+    , br : ColorAdjustments
     }
 
 
@@ -25,13 +28,27 @@ render settings =
             , ( "initialVariables", Encode.list Encode.int settings.initialVariables )
             , ( "colorAdjustments"
               , Encode.object
-                    [ ( "tl", Encode.list Encode.int settings.tl )
-                    , ( "tr", Encode.list Encode.int settings.tr )
-                    , ( "bl", Encode.list Encode.int settings.bl )
-                    , ( "br", Encode.list Encode.int settings.br )
+                    [ ( "tl", ColorAdjustments.encode settings.tl )
+                    , ( "tr", ColorAdjustments.encode settings.tr )
+                    , ( "bl", ColorAdjustments.encode settings.bl )
+                    , ( "br", ColorAdjustments.encode settings.br )
                     ]
               )
             ]
+
+
+viewEditSettings : Settings -> Html msg
+viewEditSettings settings =
+    Html.div
+        [ HA.style "display" "grid"
+        , HA.style "grid-template-columns" "1fr 1fr"
+        , HA.style "grid-gap" "50px"
+        ]
+        [ ColorAdjustments.view settings.tl
+        , ColorAdjustments.view settings.tr
+        , ColorAdjustments.view settings.bl
+        , ColorAdjustments.view settings.br
+        ]
 
 
 random : { numVars : Int, level : Int } -> Random.Generator Settings
@@ -47,7 +64,7 @@ random { numVars, level } =
             }
         )
         (Random.list numVars (Random.int 0 255))
-        (Random.list numVars (Random.int 0 (numVars - 1)))
-        (Random.list numVars (Random.int 0 (numVars - 1)))
-        (Random.list numVars (Random.int 0 (numVars - 1)))
-        (Random.list numVars (Random.int 0 (numVars - 1)))
+        (ColorAdjustments.random numVars)
+        (ColorAdjustments.random numVars)
+        (ColorAdjustments.random numVars)
+        (ColorAdjustments.random numVars)
