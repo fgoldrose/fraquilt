@@ -2,7 +2,7 @@ port module Settings exposing (..)
 
 import Array exposing (Array)
 import ColorAdjustments exposing (ColorAdjustments)
-import Html exposing (Html)
+import Html exposing (Html, label)
 import Html.Attributes as HA
 import Html.Events as HE
 import Json.Encode as Encode
@@ -64,84 +64,95 @@ viewEditSettings settings =
                 ]
                 [ Html.text "Configuration" ]
             , viewLevel settings.level
-            , viewNumberOfVariables (Array.length settings.initialVariables)
             , viewColorAdjustmentGrid settings
+            , viewNumberOfVariables (Array.length settings.initialVariables)
             , viewInitialVars settings.initialVariables
             ]
         ]
 
 
-viewLevel : Int -> Html Msg
-viewLevel level =
+sectionWithName : String -> List (Html msg) -> Html msg
+sectionWithName labelText elements =
     Html.div
         [ HA.style "display" "flex"
         , HA.style "flex-direction" "column"
         , HA.style "align-items" "center"
-        , HA.style "gap" "10px"
+        , HA.style "gap" "5px"
         ]
-        [ Html.span [] [ Html.text "Level" ]
-        , Html.div
-            [ HA.style "display" "flex"
-            , HA.style "flex-direction" "row"
-            , HA.style "align-items" "center"
-            , HA.style "gap" "5px"
-            ]
-            [ Html.label
-                [ HA.for "level"
-                , HA.style "width" "30px"
-                , HA.style "text-align" "right"
-                ]
-                [ Html.text (String.fromInt level) ]
-            , Html.input
-                [ HA.id "level"
-                , HA.type_ "range"
-                , HA.min "1"
-                , HA.max "10"
-                , HA.list "level-markers"
-                , HA.value (String.fromInt level)
-                , HE.onInput ChangeLevel
-                ]
-                []
-            , Html.datalist [ HA.id "level-markers" ]
-                (List.map
-                    (\l ->
-                        Html.option
-                            [ HA.value (String.fromInt l) ]
-                            [ Html.text (String.fromInt l) ]
-                    )
-                    (List.range 1 10)
-                )
-            ]
+        (Html.span
+            [ HA.style "font-weight" "bold" ]
+            [ Html.text labelText ]
+            :: elements
+        )
+
+
+sliderWithLabel :
+    { id : String
+    , value : Int
+    , msg : String -> Msg
+    , min : Int
+    , max : Int
+    }
+    -> Html Msg
+sliderWithLabel { id, value, msg, min, max } =
+    Html.div
+        [ HA.style "display" "flex"
+        , HA.style "flex-direction" "row"
+        , HA.style "align-items" "center"
+        , HA.style "gap" "5px"
         ]
+        [ Html.label
+            [ HA.for id
+            , HA.style "width" "30px"
+            , HA.style "text-align" "right"
+            ]
+            [ Html.text (String.fromInt value) ]
+        , Html.input
+            [ HA.id id
+            , HA.type_ "range"
+            , HA.min (String.fromInt min)
+            , HA.max (String.fromInt max)
+            , HA.value (String.fromInt value)
+            , HE.onInput msg
+            ]
+            []
+        ]
+
+
+viewLevel : Int -> Html Msg
+viewLevel level =
+    [ sliderWithLabel
+        { id = "level"
+        , value = level
+        , msg = ChangeLevel
+        , min = 1
+        , max = 10
+        }
+    ]
+        |> sectionWithName "Level"
 
 
 viewNumberOfVariables : Int -> Html Msg
 viewNumberOfVariables numVars =
-    Html.div
+    [ Html.div
         [ HA.style "display" "flex"
-        , HA.style "flex-direction" "column"
+        , HA.style "flex-direction" "row"
         , HA.style "align-items" "center"
         , HA.style "gap" "10px"
         ]
-        [ Html.span [] [ Html.text "Number of variables" ]
-        , Html.div
-            [ HA.style "display" "flex"
-            , HA.style "flex-direction" "row"
-            , HA.style "align-items" "center"
-            , HA.style "gap" "10px"
-            ]
-            [ Html.button [ HE.onClick (ChangeNumberOfVariables (numVars - 1)) ]
-                [ Html.text "-" ]
-            , Html.span [] [ Html.text (String.fromInt numVars) ]
-            , Html.button [ HE.onClick (ChangeNumberOfVariables (numVars + 1)) ]
-                [ Html.text "+" ]
-            ]
+        [ Html.button [ HE.onClick (ChangeNumberOfVariables (numVars - 1)) ]
+            [ Html.text "-" ]
+        , Html.span [] [ Html.text (String.fromInt numVars) ]
+        , Html.button [ HE.onClick (ChangeNumberOfVariables (numVars + 1)) ]
+            [ Html.text "+" ]
         ]
+    ]
+        |> sectionWithName "Number of variables"
 
 
 viewColorAdjustmentGrid : Settings -> Html Msg
 viewColorAdjustmentGrid settings =
-    Html.div
+    [ Html.div
         [ HA.style "display" "grid"
         , HA.style "grid-template-columns" "100px 100px"
         , HA.style "grid-gap" "30px"
@@ -159,48 +170,24 @@ viewColorAdjustmentGrid settings =
             BottomRight
             (getSelectedForQuadrant BottomRight settings.selectionState)
         ]
+    ]
+        |> sectionWithName "Variable swaps"
 
 
 viewInitialVars : Array Int -> Html Msg
 viewInitialVars initialVars =
-    Html.div
-        [ HA.style "display" "flex"
-        , HA.style "flex-direction" "column"
-        , HA.style "align-items" "center"
-        , HA.style "gap" "10px"
-        ]
-        (Html.span [] [ Html.text "Initial values" ]
-            :: List.indexedMap
-                (\index initVar ->
-                    let
-                        id =
-                            "initVar-" ++ String.fromInt index
-                    in
-                    Html.div
-                        [ HA.style "display" "flex"
-                        , HA.style "flex-direction" "row"
-                        , HA.style "align-items" "center"
-                        , HA.style "gap" "5px"
-                        ]
-                        [ Html.label
-                            [ HA.for id
-                            , HA.style "width" "30px"
-                            , HA.style "text-align" "right"
-                            ]
-                            [ Html.text (String.fromInt initVar) ]
-                        , Html.input
-                            [ HA.id id
-                            , HA.type_ "range"
-                            , HA.min "0"
-                            , HA.max "255"
-                            , HA.value (String.fromInt initVar)
-                            , HE.onInput (UpdateInitialVar index)
-                            ]
-                            []
-                        ]
-                )
-                (Array.toList initialVars)
+    List.indexedMap
+        (\index initVar ->
+            sliderWithLabel
+                { id = "initVar-" ++ String.fromInt index
+                , value = initVar
+                , msg = UpdateInitialVar index
+                , min = 0
+                , max = 255
+                }
         )
+        (Array.toList initialVars)
+        |> sectionWithName "Initial variables"
 
 
 random : { numVars : Int, level : Int } -> Random.Generator Settings

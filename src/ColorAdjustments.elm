@@ -40,7 +40,7 @@ view colorAdjustments quadrant maybeSelectedIndex =
             List.range 0 (numVars - 1)
 
         pixelSize =
-            ((20 * numVars) |> String.fromInt) ++ "px"
+            ((30 * numVars) |> String.fromInt) ++ "px"
     in
     Html.div
         [ HA.style "background-color" "rgb(200, 200, 200)"
@@ -99,7 +99,7 @@ dot :
     -> Html Msg
 dot { side, totalVars, quadrant, maybeSelectedIndex } index =
     Html.div
-        ([ HA.style "background-color" "black"
+        ([ HA.style "background-color" "rgb(0, 100, 255)"
          , HA.style "width" "20px"
          , HA.style "height" "20px"
          , HA.style "border-radius" "100%"
@@ -114,33 +114,42 @@ dot { side, totalVars, quadrant, maybeSelectedIndex } index =
                         [ HA.style "left" "0"
                         , HA.style "transform" "translate(-50%, -50%)"
                         , HA.style "cursor" "pointer"
+                        , HA.style "filter" "drop-shadow(5px 5px 2px rgba(0, 0, 0, 0.5))"
+                        , HA.style "transition" "background-color 0.2s ease-in"
                         ]
                             ++ (case maybeSelectedIndex of
                                     Just selectedIndex ->
                                         if selectedIndex == index then
-                                            [ HA.style "background-color" "rgb(0, 100, 255)"
+                                            [ HA.style "background-color" "rgb(0, 0, 255)"
                                             , HA.style "outline" "2px solid rgba(0, 100, 255, 0.5)"
                                             ]
 
                                         else
-                                            [ HE.onClick (StartSelection quadrant index) ]
+                                            [ HA.style "background-color" "rgb(0, 100, 255)"
+                                            , HE.onClick (StartSelection quadrant index)
+                                            ]
 
                                     Nothing ->
-                                        [ HE.onClick (StartSelection quadrant index) ]
+                                        [ HA.style "background-color" "rgb(0, 100, 255)"
+                                        , HE.onClick (StartSelection quadrant index)
+                                        ]
                                )
 
                     Right ->
                         [ HA.style "right" "0"
                         , HA.style "transform" "translate(50%, -50%)"
+                        , HA.style "filter" "drop-shadow(5px 5px 2px rgba(0, 0, 0, 0.5))"
+                        , HA.style "transition" "background-color 0.2s ease-in"
                         ]
                             ++ (case maybeSelectedIndex of
                                     Just _ ->
                                         [ HA.style "cursor" "pointer"
                                         , HE.onClick (EndSelection index)
+                                        , HA.style "background-color" "rgb(0, 100, 255)"
                                         ]
 
                                     Nothing ->
-                                        []
+                                        [ HA.style "background-color" "black" ]
                                )
                )
         )
