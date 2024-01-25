@@ -41,6 +41,23 @@ update msg ({ settings, randomSeed } as model) =
             , Settings.render randomSettings
             )
 
+        RandomizePermutation ->
+            let
+                ( randomSettings, newSeed ) =
+                    Random.step
+                        (Settings.randomPermutations
+                            { numVars = Array.length settings.initialVariables
+                            , level = settings.level
+                            }
+                        )
+                        randomSeed
+            in
+            ( { settings = randomSettings
+              , randomSeed = newSeed
+              }
+            , Settings.render randomSettings
+            )
+
         UpdateInitialVar index stringValue ->
             case String.toInt stringValue of
                 Nothing ->
@@ -78,7 +95,7 @@ update msg ({ settings, randomSeed } as model) =
             let
                 ( randomSettings, newSeed ) =
                     Random.step
-                        (Settings.random
+                        (Settings.randomPermutations
                             { numVars = numVars, level = settings.level }
                         )
                         randomSeed
@@ -195,7 +212,7 @@ view model =
                     , HA.style "height" "100%"
                     , HA.style "image-rendering" "pixelated"
                     , HA.style "border" "2px solid black"
-                    , HE.onClick Randomize
+                    , HE.onClick RandomizePermutation
                     ]
                     []
                 ]
@@ -216,7 +233,7 @@ init flags =
 
         ( randomSettings, newSeed ) =
             Random.step
-                (Settings.random
+                (Settings.randomPermutations
                     { numVars = 4, level = 9 }
                 )
                 randomSeed

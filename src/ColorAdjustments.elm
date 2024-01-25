@@ -7,6 +7,7 @@ import Html.Events as HE
 import Json.Encode as Encode
 import Messages exposing (Msg(..))
 import Random
+import Random.List
 import Svg exposing (Svg)
 import Svg.Attributes
 import Types exposing (Quadrant(..))
@@ -222,4 +223,11 @@ encode (ColorAdjustments adjustments) =
 random : Int -> Random.Generator ColorAdjustments
 random numVars =
     Random.list numVars (Random.int 0 (numVars - 1))
+        |> Random.map (Array.fromList >> ColorAdjustments)
+
+
+randomPermutation : Int -> Random.Generator ColorAdjustments
+randomPermutation numVars =
+    -- Version that produces a one to one permutation
+    Random.List.shuffle (List.range 0 (numVars - 1))
         |> Random.map (Array.fromList >> ColorAdjustments)

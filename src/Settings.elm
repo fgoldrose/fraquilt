@@ -50,8 +50,22 @@ viewEditSettings settings =
         , HA.style "flex-grow" "2"
         , HA.style "overflow-y" "scroll"
         , HA.style "background-color" "rgb(240, 240, 240)"
+        , HA.style "position" "relative"
         ]
         [ Html.div
+            [ HA.style "position" "absolute"
+            , HA.style "top" "10px"
+            , HA.style "left" "10px"
+            , HA.style "display" "flex"
+            , HA.style "gap" "10px"
+            ]
+            [ Html.button [ HE.onClick Randomize ] [ Html.text "Random" ]
+            , Html.button
+                [ HE.onClick RandomizePermutation
+                ]
+                [ Html.text "Random Permutation" ]
+            ]
+        , Html.div
             [ HA.style "display" "flex"
             , HA.style "flex-direction" "column"
             , HA.style "align-items" "center"
@@ -208,3 +222,23 @@ random { numVars, level } =
         (ColorAdjustments.random numVars)
         (ColorAdjustments.random numVars)
         (ColorAdjustments.random numVars)
+
+
+randomPermutations : { numVars : Int, level : Int } -> Random.Generator Settings
+randomPermutations { numVars, level } =
+    Random.map5
+        (\initialVariables tl tr bl br ->
+            { level = level
+            , initialVariables = initialVariables
+            , tl = tl
+            , tr = tr
+            , bl = bl
+            , br = br
+            , selectionState = NoneSelected
+            }
+        )
+        (Random.map Array.fromList (Random.list numVars (Random.int 0 255)))
+        (ColorAdjustments.randomPermutation numVars)
+        (ColorAdjustments.randomPermutation numVars)
+        (ColorAdjustments.randomPermutation numVars)
+        (ColorAdjustments.randomPermutation numVars)
