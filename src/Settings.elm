@@ -167,6 +167,7 @@ viewEditSettings { settings, updateInitialVar, changeLevel, changeNumVars } =
     in
     Html.div
         [ HA.style "height" "100%"
+        , HA.style "max-height" "100vh"
         , HA.style "flex-grow" "2"
         , HA.style "overflow-y" "scroll"
         , HA.style "background-color" "rgb(240, 240, 240)"
@@ -183,14 +184,10 @@ viewEditSettings { settings, updateInitialVar, changeLevel, changeNumVars } =
                 , HA.style "font-weight" "bold"
                 ]
                 [ Html.text "Configuration" ]
+            , level
             , numberOfVariables
             , colorAdjustmentsGrid
-            , Html.div
-                [ HA.style "display" "flex"
-                , HA.style "flex-direction" "row"
-                , HA.style "justify-content" "space-between"
-                ]
-                [ initialVars, level ]
+            , initialVars
             ]
         ]
 

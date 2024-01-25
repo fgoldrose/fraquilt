@@ -104,8 +104,10 @@ view model =
         , HA.style "align-items" "center"
         , HA.style "justify-content" "space-between"
         , HA.style "height" "100vh"
+        , HA.style "width" "100vw"
         , HA.style "flex-wrap" "wrap"
         , HA.style "font-family" "sans-serif"
+        , HA.style "overflow" "auto"
         ]
         [ Html.div
             [ HA.style "cursor" "pointer"
@@ -115,15 +117,22 @@ view model =
             , HA.style "justify-content" "center"
             , HA.style "flex-grow" "1"
             ]
-            [ Html.canvas
-                [ HA.id "canvas"
-                , HA.style "image-rendering" "pixelated"
-                , HA.style "width" "512px"
-                , HA.style "height" "512px"
-                , HA.style "border" "2px solid black"
-                , HE.onClick Randomize
+            [ Html.div
+                [ HA.style "max-width" "90vw"
+                , HA.style "max-height" "90vh"
+                , HA.style "width" "90vh"
+                , HA.style "height" "90vh"
                 ]
-                []
+                [ Html.canvas
+                    [ HA.id "canvas"
+                    , HA.style "width" "100%"
+                    , HA.style "height" "100%"
+                    , HA.style "image-rendering" "pixelated"
+                    , HA.style "border" "2px solid black"
+                    , HE.onClick Randomize
+                    ]
+                    []
+                ]
             ]
         , Settings.viewEditSettings
             { settings = model.settings
