@@ -2,6 +2,8 @@ port module Settings exposing (..)
 
 import Array exposing (Array)
 import ColorAdjustments exposing (ColorAdjustments)
+import DnDList
+import DragAndDrop
 import Html exposing (Html, label)
 import Html.Attributes as HA
 import Html.Events as HE
@@ -17,12 +19,16 @@ port renderImage : Encode.Value -> Cmd msg
 type alias Settings =
     { level : Int
     , initialVariables : Array Int
-    , tl : ColorAdjustments
-    , tr : ColorAdjustments
-    , bl : ColorAdjustments
-    , br : ColorAdjustments
+    , tl : ColorAdjustmentsState
+    , tr : ColorAdjustmentsState
+    , bl : ColorAdjustmentsState
+    , br : ColorAdjustmentsState
     , selectionState : SelectionState
     }
+
+
+type alias ColorAdjustmentsState =
+    { colorAdjustments : ColorAdjustments, dnd : DnDList.Model }
 
 
 render : Settings -> Cmd msg
@@ -33,10 +39,10 @@ render settings =
             , ( "initialVariables", Encode.array Encode.int settings.initialVariables )
             , ( "colorAdjustments"
               , Encode.object
-                    [ ( "tl", ColorAdjustments.encode settings.tl )
-                    , ( "tr", ColorAdjustments.encode settings.tr )
-                    , ( "bl", ColorAdjustments.encode settings.bl )
-                    , ( "br", ColorAdjustments.encode settings.br )
+                    [ ( "tl", ColorAdjustments.encode settings.tl.colorAdjustments )
+                    , ( "tr", ColorAdjustments.encode settings.tr.colorAdjustments )
+                    , ( "bl", ColorAdjustments.encode settings.bl.colorAdjustments )
+                    , ( "br", ColorAdjustments.encode settings.br.colorAdjustments )
                     ]
               )
             ]
@@ -210,10 +216,10 @@ random { numVars, level } =
         (\initialVariables tl tr bl br ->
             { level = level
             , initialVariables = initialVariables
-            , tl = tl
-            , tr = tr
-            , bl = bl
-            , br = br
+            , tl = { colorAdjustments = tl, dnd = DragAndDrop.tlSystem.model }
+            , tr = { colorAdjustments = tr, dnd = DragAndDrop.trSystem.model }
+            , bl = { colorAdjustments = bl, dnd = DragAndDrop.blSystem.model }
+            , br = { colorAdjustments = br, dnd = DragAndDrop.brSystem.model }
             , selectionState = NoneSelected
             }
         )
@@ -230,10 +236,10 @@ randomPermutations { numVars, level } =
         (\initialVariables tl tr bl br ->
             { level = level
             , initialVariables = initialVariables
-            , tl = tl
-            , tr = tr
-            , bl = bl
-            , br = br
+            , tl = { colorAdjustments = tl, dnd = DragAndDrop.tlSystem.model }
+            , tr = { colorAdjustments = tr, dnd = DragAndDrop.trSystem.model }
+            , bl = { colorAdjustments = bl, dnd = DragAndDrop.blSystem.model }
+            , br = { colorAdjustments = br, dnd = DragAndDrop.brSystem.model }
             , selectionState = NoneSelected
             }
         )
