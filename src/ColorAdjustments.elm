@@ -1,8 +1,5 @@
 module ColorAdjustments exposing (..)
 
-import Array exposing (Array)
-import DnDList
-import DragAndDrop
 import Html exposing (Html)
 import Html.Attributes as HA
 import Html.Events as HE
@@ -13,7 +10,7 @@ import Random
 import Random.List
 import Svg exposing (Svg)
 import Svg.Attributes
-import Types exposing (Mode(..), Quadrant(..))
+import Types exposing (Mode(..), Quadrant(..), SelectionState(..), getSelectedForQuadrant)
 
 
 type alias ColorAdjustments =
@@ -30,8 +27,8 @@ setNewLine fromIndex toIndex colorArray =
     List.Extra.setAt fromIndex toIndex colorArray
 
 
-view : { colorAdjustments : ColorAdjustments, dnd : DnDList.Model } -> Quadrant -> Mode -> Maybe Int -> Html Msg
-view { colorAdjustments, dnd } quadrant mode maybeSelectedIndex =
+view : ColorAdjustments -> Quadrant -> Mode -> SelectionState -> Html Msg
+view colorAdjustments quadrant mode selectionState =
     let
         numVars =
             getNumVars colorAdjustments
@@ -52,14 +49,13 @@ view { colorAdjustments, dnd } quadrant mode maybeSelectedIndex =
             , HA.style "width" "100px"
             , HA.style "height" pixelSize
             ]
-            (lines colorAdjustments dnd (DragAndDrop.getSystemForQuadrant quadrant)
+            (lines colorAdjustments
                 :: List.map
                     (dot
                         { side = Left
                         , totalVars = numVars
                         , quadrant = quadrant
-                        , maybeSelectedIndex = maybeSelectedIndex
-                        , dndModel = dnd
+                        , selectionState = selectionState
                         , mode = mode
                         }
                     )
@@ -69,14 +65,12 @@ view { colorAdjustments, dnd } quadrant mode maybeSelectedIndex =
                         { side = Right
                         , totalVars = numVars
                         , quadrant = quadrant
-                        , maybeSelectedIndex = maybeSelectedIndex
-                        , dndModel = dnd
+                        , selectionState = selectionState
                         , mode = mode
                         }
                     )
                     listRange
             )
-        , ghostView dnd (DragAndDrop.getSystemForQuadrant quadrant)
         ]
 
 
@@ -98,56 +92,40 @@ dot :
     { side : Side
     , totalVars : Int
     , quadrant : Quadrant
-    , maybeSelectedIndex : Maybe Int
-    , dndModel : DnDList.Model
+    , selectionState : SelectionState
     , mode : Mode
     }
     -> Int
     -> Html Msg
-dot { side, totalVars, quadrant, maybeSelectedIndex, dndModel, mode } index =
+dot { side, totalVars, quadrant, selectionState, mode } index =
     let
-        dndSystem =
-            DragAndDrop.getSystemForQuadrant quadrant
-
-        dotId =
-            "dot-"
-                ++ String.fromInt index
-                ++ (case quadrant of
-                        TopLeft ->
-                            "-top-left"
-
-                        TopRight ->
-                            "-top-right"
-
-                        BottomLeft ->
-                            "-bottom-left"
-
-                        BottomRight ->
-                            "-bottom-right"
-                   )
+        maybeSelectedIndex =
+            getSelectedForQuadrant quadrant selectionState
 
         ( leftModeStyles, rightModeStyles ) =
             case mode of
                 Permutation ->
-                    ( case dndSystem.info dndModel of
-                        Just { dragIndex, dropIndex } ->
-                            if index /= dragIndex && index /= dropIndex then
-                                HA.style "background-color" "rgb(0, 100, 255)"
-                                    :: dndSystem.dropEvents index dotId
-
-                            else if index /= dragIndex && index == dropIndex then
-                                HA.style "background-color" "rgb(0, 0, 255)"
-                                    :: HA.style "width" "25px"
-                                    :: HA.style "height" "25px"
-                                    :: dndSystem.dropEvents index dotId
+                    ( case maybeSelectedIndex of
+                        Just selectedIndex ->
+                            if selectedIndex == index then
+                                [ HA.style "background-color" "rgb(0, 0, 255)"
+                                , HA.style "outline" "2px solid rgba(0, 100, 255, 0.5)"
+                                , HE.onClick CancelSelection
+                                ]
 
                             else
-                                [ HA.style "background-color" "rgb(100, 100, 100)"
+                                [ HA.style "background-color" "rgb(0, 100, 255)"
+                                , HE.onClick (EndSelection index)
                                 ]
 
                         Nothing ->
-                            HA.style "background-color" "rgb(0, 100, 255)"
-                                :: dndSystem.dragEvents index dotId
+                            [ if selectionState == NoneSelected then
+                                HA.style "background-color" "rgb(0, 100, 255)"
+
+                              else
+                                HA.style "background-color" "black"
+                            , HE.onClick (StartSelection quadrant index)
+                            ]
                     , [ HA.style "background-color" "black" ]
                     )
 
@@ -157,10 +135,15 @@ dot { side, totalVars, quadrant, maybeSelectedIndex, dndModel, mode } index =
                             ( if selectedIndex == index then
                                 [ HA.style "background-color" "rgb(0, 0, 255)"
                                 , HA.style "outline" "2px solid rgba(0, 100, 255, 0.5)"
+                                , HE.onClick CancelSelection
                                 ]
 
                               else
-                                [ HA.style "background-color" "rgb(0, 100, 255)"
+                                [ if selectionState == NoneSelected then
+                                    HA.style "background-color" "rgb(0, 100, 255)"
+
+                                  else
+                                    HA.style "background-color" "black"
                                 , HE.onClick (StartSelection quadrant index)
                                 ]
                             , [ HA.style "cursor" "pointer"
@@ -170,7 +153,11 @@ dot { side, totalVars, quadrant, maybeSelectedIndex, dndModel, mode } index =
                             )
 
                         Nothing ->
-                            ( [ HA.style "background-color" "rgb(0, 100, 255)"
+                            ( [ if selectionState == NoneSelected then
+                                    HA.style "background-color" "rgb(0, 100, 255)"
+
+                                else
+                                    HA.style "background-color" "black"
                               , HE.onClick (StartSelection quadrant index)
                               ]
                             , [ HA.style "background-color" "black" ]
@@ -198,7 +185,6 @@ dot { side, totalVars, quadrant, maybeSelectedIndex, dndModel, mode } index =
          , HA.style "height" "20px"
          , HA.style "border-radius" "100%"
          , HA.style "position" "absolute"
-         , HA.id dotId
          , HA.style "top"
             (getTopPositionForIndex
                 { index = index, totalVars = totalVars }
@@ -215,40 +201,11 @@ dot { side, totalVars, quadrant, maybeSelectedIndex, dndModel, mode } index =
         []
 
 
-lines : ColorAdjustments -> DnDList.Model -> DnDList.System Int Msg -> Html Msg
-lines colorAdjustments dnd system =
+lines : ColorAdjustments -> Html Msg
+lines colorAdjustments =
     let
         numVars =
             List.length colorAdjustments
-
-        ( ghostLine, skipIndex ) =
-            case system.info dnd of
-                Just { dragIndex, currentPosition, startPosition } ->
-                    ( List.Extra.getAt dragIndex colorAdjustments
-                        |> Maybe.map
-                            (\toIndex ->
-                                [ Svg.line
-                                    [ Svg.Attributes.y1
-                                        (String.fromFloat
-                                            ((currentPosition.y - startPosition.y)
-                                                + ((toFloat dragIndex / toFloat (numVars - 1)) * 120)
-                                            )
-                                        )
-                                    , Svg.Attributes.y2 (getTopPositionForIndex { index = toIndex, totalVars = numVars })
-                                    , Svg.Attributes.x1 "0%"
-                                    , Svg.Attributes.x2 "100%"
-                                    , Svg.Attributes.stroke "black"
-                                    , Svg.Attributes.strokeWidth "2"
-                                    ]
-                                    []
-                                ]
-                            )
-                        |> Maybe.withDefault []
-                    , Just dragIndex
-                    )
-
-                Nothing ->
-                    ( [], Nothing )
     in
     Html.div
         [ HA.style "position" "absolute"
@@ -261,22 +218,17 @@ lines colorAdjustments dnd system =
             ]
             (List.filterMap
                 (\fromIndex ->
-                    if skipIndex == Just fromIndex then
-                        Nothing
-
-                    else
-                        List.Extra.getAt fromIndex colorAdjustments
-                            |> Maybe.map
-                                (\toIndex ->
-                                    line
-                                        { totalVars = numVars
-                                        , fromIndex = fromIndex
-                                        , toIndex = toIndex
-                                        }
-                                )
+                    List.Extra.getAt fromIndex colorAdjustments
+                        |> Maybe.map
+                            (\toIndex ->
+                                line
+                                    { totalVars = numVars
+                                    , fromIndex = fromIndex
+                                    , toIndex = toIndex
+                                    }
+                            )
                 )
                 (List.range 0 (numVars - 1))
-                ++ ghostLine
             )
         ]
 
@@ -305,26 +257,6 @@ line { totalVars, fromIndex, toIndex } =
         , Svg.Attributes.strokeWidth "2"
         ]
         []
-
-
-ghostView : DnDList.Model -> DnDList.System Int Msg -> Html.Html Msg
-ghostView dnd system =
-    case system.info dnd of
-        Just _ ->
-            Html.div
-                ([ HA.style "width" "20px"
-                 , HA.style "height" "20px"
-                 , HA.style "border-radius" "100%"
-                 , HA.style "background-color" "rgb(0, 100, 255)"
-                 , HA.style "position" "absolute"
-                 , HA.style "left" "0"
-                 ]
-                    ++ system.ghostStyles dnd
-                )
-                []
-
-        _ ->
-            Html.text ""
 
 
 encode : ColorAdjustments -> Encode.Value

@@ -2,15 +2,13 @@ port module Settings exposing (..)
 
 import Array exposing (Array)
 import ColorAdjustments exposing (ColorAdjustments)
-import DnDList
-import DragAndDrop
-import Html exposing (Html, label)
+import Html exposing (Html)
 import Html.Attributes as HA
 import Html.Events as HE
 import Json.Encode as Encode
 import Messages exposing (Msg(..))
 import Random
-import Types exposing (Mode(..), Quadrant(..), SelectionState(..), getSelectedForQuadrant)
+import Types exposing (Mode(..), Quadrant(..), SelectionState(..))
 
 
 port renderImage : Encode.Value -> Cmd msg
@@ -19,16 +17,12 @@ port renderImage : Encode.Value -> Cmd msg
 type alias Settings =
     { level : Int
     , initialVariables : Array Int
-    , tl : ColorAdjustmentsState
-    , tr : ColorAdjustmentsState
-    , bl : ColorAdjustmentsState
-    , br : ColorAdjustmentsState
+    , tl : ColorAdjustments
+    , tr : ColorAdjustments
+    , bl : ColorAdjustments
+    , br : ColorAdjustments
     , selectionState : SelectionState
     }
-
-
-type alias ColorAdjustmentsState =
-    { colorAdjustments : ColorAdjustments, dnd : DnDList.Model }
 
 
 render : Settings -> Cmd msg
@@ -39,10 +33,10 @@ render settings =
             , ( "initialVariables", Encode.array Encode.int settings.initialVariables )
             , ( "colorAdjustments"
               , Encode.object
-                    [ ( "tl", ColorAdjustments.encode settings.tl.colorAdjustments )
-                    , ( "tr", ColorAdjustments.encode settings.tr.colorAdjustments )
-                    , ( "bl", ColorAdjustments.encode settings.bl.colorAdjustments )
-                    , ( "br", ColorAdjustments.encode settings.br.colorAdjustments )
+                    [ ( "tl", ColorAdjustments.encode settings.tl )
+                    , ( "tr", ColorAdjustments.encode settings.tr )
+                    , ( "bl", ColorAdjustments.encode settings.bl )
+                    , ( "br", ColorAdjustments.encode settings.br )
                     ]
               )
             ]
@@ -206,19 +200,19 @@ viewColorAdjustmentGrid mode settings =
         [ ColorAdjustments.view settings.tl
             TopLeft
             mode
-            (getSelectedForQuadrant TopLeft settings.selectionState)
+            settings.selectionState
         , ColorAdjustments.view settings.tr
             TopRight
             mode
-            (getSelectedForQuadrant TopRight settings.selectionState)
+            settings.selectionState
         , ColorAdjustments.view settings.bl
             BottomLeft
             mode
-            (getSelectedForQuadrant BottomLeft settings.selectionState)
+            settings.selectionState
         , ColorAdjustments.view settings.br
             BottomRight
             mode
-            (getSelectedForQuadrant BottomRight settings.selectionState)
+            settings.selectionState
         ]
     ]
         |> sectionWithName "Variable swaps"
@@ -246,10 +240,10 @@ random { numVars, level } =
         (\initialVariables tl tr bl br ->
             { level = level
             , initialVariables = initialVariables
-            , tl = { colorAdjustments = tl, dnd = DragAndDrop.tlSystem.model }
-            , tr = { colorAdjustments = tr, dnd = DragAndDrop.trSystem.model }
-            , bl = { colorAdjustments = bl, dnd = DragAndDrop.blSystem.model }
-            , br = { colorAdjustments = br, dnd = DragAndDrop.brSystem.model }
+            , tl = tl
+            , tr = tr
+            , bl = bl
+            , br = br
             , selectionState = NoneSelected
             }
         )
@@ -266,10 +260,10 @@ randomPermutations { numVars, level } =
         (\initialVariables tl tr bl br ->
             { level = level
             , initialVariables = initialVariables
-            , tl = { colorAdjustments = tl, dnd = DragAndDrop.tlSystem.model }
-            , tr = { colorAdjustments = tr, dnd = DragAndDrop.trSystem.model }
-            , bl = { colorAdjustments = bl, dnd = DragAndDrop.blSystem.model }
-            , br = { colorAdjustments = br, dnd = DragAndDrop.brSystem.model }
+            , tl = tl
+            , tr = tr
+            , bl = bl
+            , br = br
             , selectionState = NoneSelected
             }
         )
