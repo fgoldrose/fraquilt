@@ -13,7 +13,7 @@ import Random
 import Random.List
 import Svg exposing (Svg)
 import Svg.Attributes
-import Types exposing (Quadrant(..))
+import Types exposing (Mode(..), Quadrant(..))
 
 
 type alias ColorAdjustments =
@@ -30,8 +30,8 @@ setNewLine fromIndex toIndex colorArray =
     List.Extra.setAt fromIndex toIndex colorArray
 
 
-view : { colorAdjustments : ColorAdjustments, dnd : DnDList.Model } -> Quadrant -> Maybe Int -> Html Msg
-view { colorAdjustments, dnd } quadrant maybeSelectedIndex =
+view : { colorAdjustments : ColorAdjustments, dnd : DnDList.Model } -> Quadrant -> Mode -> Maybe Int -> Html Msg
+view { colorAdjustments, dnd } quadrant mode maybeSelectedIndex =
     let
         numVars =
             getNumVars colorAdjustments
@@ -60,6 +60,7 @@ view { colorAdjustments, dnd } quadrant maybeSelectedIndex =
                         , quadrant = quadrant
                         , maybeSelectedIndex = maybeSelectedIndex
                         , dndModel = dnd
+                        , mode = mode
                         }
                     )
                     listRange
@@ -70,6 +71,7 @@ view { colorAdjustments, dnd } quadrant maybeSelectedIndex =
                         , quadrant = quadrant
                         , maybeSelectedIndex = maybeSelectedIndex
                         , dndModel = dnd
+                        , mode = mode
                         }
                     )
                     listRange
@@ -98,10 +100,11 @@ dot :
     , quadrant : Quadrant
     , maybeSelectedIndex : Maybe Int
     , dndModel : DnDList.Model
+    , mode : Mode
     }
     -> Int
     -> Html Msg
-dot { side, totalVars, quadrant, maybeSelectedIndex, dndModel } index =
+dot { side, totalVars, quadrant, maybeSelectedIndex, dndModel, mode } index =
     let
         dndSystem =
             DragAndDrop.getSystemForQuadrant quadrant
@@ -123,24 +126,55 @@ dot { side, totalVars, quadrant, maybeSelectedIndex, dndModel } index =
                             "-bottom-right"
                    )
 
-        dndStyles =
-            case dndSystem.info dndModel of
-                Just { dragIndex, dropIndex } ->
-                    if index /= dragIndex && index /= dropIndex then
-                        dndSystem.dropEvents index dotId
+        ( leftModeStyles, rightModeStyles ) =
+            case mode of
+                Permutation ->
+                    ( case dndSystem.info dndModel of
+                        Just { dragIndex, dropIndex } ->
+                            if index /= dragIndex && index /= dropIndex then
+                                HA.style "background-color" "rgb(0, 100, 255)"
+                                    :: dndSystem.dropEvents index dotId
 
-                    else if index /= dragIndex && index == dropIndex then
-                        HA.style "background-color" "rgb(0, 0, 255)"
-                            :: HA.style "width" "25px"
-                            :: HA.style "height" "25px"
-                            :: dndSystem.dropEvents index dotId
+                            else if index /= dragIndex && index == dropIndex then
+                                HA.style "background-color" "rgb(0, 0, 255)"
+                                    :: HA.style "width" "25px"
+                                    :: HA.style "height" "25px"
+                                    :: dndSystem.dropEvents index dotId
 
-                    else
-                        [ HA.style "background-color" "rgb(100, 100, 100)"
-                        ]
+                            else
+                                [ HA.style "background-color" "rgb(100, 100, 100)"
+                                ]
 
-                Nothing ->
-                    dndSystem.dragEvents index dotId
+                        Nothing ->
+                            HA.style "background-color" "rgb(0, 100, 255)"
+                                :: dndSystem.dragEvents index dotId
+                    , [ HA.style "background-color" "black" ]
+                    )
+
+                Free ->
+                    case maybeSelectedIndex of
+                        Just selectedIndex ->
+                            ( if selectedIndex == index then
+                                [ HA.style "background-color" "rgb(0, 0, 255)"
+                                , HA.style "outline" "2px solid rgba(0, 100, 255, 0.5)"
+                                ]
+
+                              else
+                                [ HA.style "background-color" "rgb(0, 100, 255)"
+                                , HE.onClick (StartSelection quadrant index)
+                                ]
+                            , [ HA.style "cursor" "pointer"
+                              , HE.onClick (EndSelection index)
+                              , HA.style "background-color" "rgb(0, 100, 255)"
+                              ]
+                            )
+
+                        Nothing ->
+                            ( [ HA.style "background-color" "rgb(0, 100, 255)"
+                              , HE.onClick (StartSelection quadrant index)
+                              ]
+                            , [ HA.style "background-color" "black" ]
+                            )
 
         leftStyles =
             [ HA.style "left" "0"
@@ -149,24 +183,7 @@ dot { side, totalVars, quadrant, maybeSelectedIndex, dndModel } index =
             , HA.style "filter" "drop-shadow(5px 5px 2px rgba(0, 0, 0, 0.5))"
             , HA.style "transition" "background-color 0.2s ease-in"
             ]
-                ++ (case maybeSelectedIndex of
-                        Just selectedIndex ->
-                            if selectedIndex == index then
-                                [ HA.style "background-color" "rgb(0, 0, 255)"
-                                , HA.style "outline" "2px solid rgba(0, 100, 255, 0.5)"
-                                ]
-
-                            else
-                                [ HA.style "background-color" "rgb(0, 100, 255)"
-                                , HE.onClick (StartSelection quadrant index)
-                                ]
-
-                        Nothing ->
-                            [ HA.style "background-color" "rgb(0, 100, 255)"
-                            , HE.onClick (StartSelection quadrant index)
-                            ]
-                   )
-                ++ dndStyles
+                ++ leftModeStyles
 
         rightStyles =
             [ HA.style "right" "0"
@@ -174,16 +191,7 @@ dot { side, totalVars, quadrant, maybeSelectedIndex, dndModel } index =
             , HA.style "filter" "drop-shadow(5px 5px 2px rgba(0, 0, 0, 0.5))"
             , HA.style "transition" "background-color 0.2s ease-in"
             ]
-                ++ (case maybeSelectedIndex of
-                        Just _ ->
-                            [ HA.style "cursor" "pointer"
-                            , HE.onClick (EndSelection index)
-                            , HA.style "background-color" "rgb(0, 100, 255)"
-                            ]
-
-                        Nothing ->
-                            [ HA.style "background-color" "black" ]
-                   )
+                ++ rightModeStyles
     in
     Html.div
         ([ HA.style "width" "20px"

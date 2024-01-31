@@ -10,7 +10,7 @@ import Html.Events as HE
 import Json.Encode as Encode
 import Messages exposing (Msg(..))
 import Random
-import Types exposing (Quadrant(..), SelectionState(..), getSelectedForQuadrant)
+import Types exposing (Mode(..), Quadrant(..), SelectionState(..), getSelectedForQuadrant)
 
 
 port renderImage : Encode.Value -> Cmd msg
@@ -48,8 +48,32 @@ render settings =
             ]
 
 
-viewEditSettings : Settings -> Html Msg
-viewEditSettings settings =
+viewEditSettings : Mode -> Settings -> Html Msg
+viewEditSettings currentMode settings =
+    let
+        modeToggleButton : Mode -> Html Msg
+        modeToggleButton modeButton =
+            Html.button
+                [ HA.style "border" "none"
+                , HA.style "outline" "none"
+                , HA.style "cursor" "pointer"
+                , if modeButton == currentMode then
+                    HA.style "background-color" "rgb(200, 200, 200)"
+
+                  else
+                    HA.class ""
+                , HE.onClick (ToggleMode modeButton)
+                ]
+                [ Html.text
+                    (case modeButton of
+                        Permutation ->
+                            "Permutation"
+
+                        Free ->
+                            "Free"
+                    )
+                ]
+    in
     Html.div
         [ HA.style "height" "100%"
         , HA.style "max-height" "100vh"
@@ -66,10 +90,12 @@ viewEditSettings settings =
             , HA.style "gap" "10px"
             ]
             [ Html.button [ HE.onClick Randomize ] [ Html.text "Random" ]
-            , Html.button
-                [ HE.onClick RandomizePermutation
+            , Html.div
+                [ HA.style "display" "flex"
+                , HA.style "outline" "1px solid black"
+                , HA.style "border-radius" "5px"
                 ]
-                [ Html.text "Random Permutation" ]
+                [ modeToggleButton Permutation, modeToggleButton Free ]
             ]
         , Html.div
             [ HA.style "display" "flex"
@@ -84,7 +110,7 @@ viewEditSettings settings =
                 ]
                 [ Html.text "Configuration" ]
             , viewLevel settings.level
-            , viewColorAdjustmentGrid settings
+            , viewColorAdjustmentGrid currentMode settings
             , viewNumberOfVariables (Array.length settings.initialVariables)
             , viewInitialVars settings.initialVariables
             ]
@@ -170,8 +196,8 @@ viewNumberOfVariables numVars =
         |> sectionWithName "Number of variables"
 
 
-viewColorAdjustmentGrid : Settings -> Html Msg
-viewColorAdjustmentGrid settings =
+viewColorAdjustmentGrid : Mode -> Settings -> Html Msg
+viewColorAdjustmentGrid mode settings =
     [ Html.div
         [ HA.style "display" "grid"
         , HA.style "grid-template-columns" "100px 100px"
@@ -179,15 +205,19 @@ viewColorAdjustmentGrid settings =
         ]
         [ ColorAdjustments.view settings.tl
             TopLeft
+            mode
             (getSelectedForQuadrant TopLeft settings.selectionState)
         , ColorAdjustments.view settings.tr
             TopRight
+            mode
             (getSelectedForQuadrant TopRight settings.selectionState)
         , ColorAdjustments.view settings.bl
             BottomLeft
+            mode
             (getSelectedForQuadrant BottomLeft settings.selectionState)
         , ColorAdjustments.view settings.br
             BottomRight
+            mode
             (getSelectedForQuadrant BottomRight settings.selectionState)
         ]
     ]

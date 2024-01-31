@@ -2,8 +2,7 @@ module Main exposing (..)
 
 import Array
 import Browser
-import ColorAdjustments exposing (ColorAdjustments)
-import DnDList
+import ColorAdjustments
 import DragAndDrop
 import Html exposing (Html)
 import Html.Attributes as HA
@@ -11,55 +10,52 @@ import Html.Events as HE
 import Messages exposing (Msg(..))
 import Random
 import Settings exposing (Settings)
-import Svg.Attributes exposing (color)
-import Types exposing (Quadrant(..), SelectionState(..))
+import Types exposing (Mode(..), Quadrant(..), SelectionState(..))
 
 
 type alias Model =
     { settings : Settings
     , randomSeed : Random.Seed
+    , mode : Mode
     }
 
 
+randomizeModel : Int -> Model -> ( Model, Cmd msg )
+randomizeModel numVars model =
+    let
+        randomizeFunction =
+            case model.mode of
+                Permutation ->
+                    Settings.randomPermutations
+
+                Free ->
+                    Settings.random
+
+        ( randomSettings, newSeed ) =
+            Random.step
+                (randomizeFunction
+                    { numVars = numVars
+                    , level = model.settings.level
+                    }
+                )
+                model.randomSeed
+    in
+    ( { model
+        | settings = randomSettings
+        , randomSeed = newSeed
+      }
+    , Settings.render randomSettings
+    )
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
-update msg ({ settings, randomSeed } as model) =
+update msg ({ settings } as model) =
     case msg of
         NoOp ->
             ( model, Cmd.none )
 
         Randomize ->
-            let
-                ( randomSettings, newSeed ) =
-                    Random.step
-                        (Settings.random
-                            { numVars = Array.length settings.initialVariables
-                            , level = settings.level
-                            }
-                        )
-                        randomSeed
-            in
-            ( { settings = randomSettings
-              , randomSeed = newSeed
-              }
-            , Settings.render randomSettings
-            )
-
-        RandomizePermutation ->
-            let
-                ( randomSettings, newSeed ) =
-                    Random.step
-                        (Settings.randomPermutations
-                            { numVars = Array.length settings.initialVariables
-                            , level = settings.level
-                            }
-                        )
-                        randomSeed
-            in
-            ( { settings = randomSettings
-              , randomSeed = newSeed
-              }
-            , Settings.render randomSettings
-            )
+            model |> randomizeModel (Array.length model.settings.initialVariables)
 
         UpdateInitialVar index stringValue ->
             case String.toInt stringValue of
@@ -95,19 +91,7 @@ update msg ({ settings, randomSeed } as model) =
                     )
 
         ChangeNumberOfVariables numVars ->
-            let
-                ( randomSettings, newSeed ) =
-                    Random.step
-                        (Settings.randomPermutations
-                            { numVars = numVars, level = settings.level }
-                        )
-                        randomSeed
-            in
-            ( { settings = randomSettings
-              , randomSeed = newSeed
-              }
-            , Settings.render randomSettings
-            )
+            model |> randomizeModel numVars
 
         StartSelection quadrant index ->
             ( { model
@@ -264,6 +248,15 @@ update msg ({ settings, randomSeed } as model) =
             , Cmd.batch [ commands, rerender ]
             )
 
+        ToggleMode mode ->
+            case mode of
+                Permutation ->
+                    { model | mode = Permutation }
+                        |> randomizeModel (Array.length settings.initialVariables)
+
+                Free ->
+                    ( { model | mode = Free }, Cmd.none )
+
 
 view : Model -> Html Msg
 view model =
@@ -298,12 +291,12 @@ view model =
                     , HA.style "height" "100%"
                     , HA.style "image-rendering" "pixelated"
                     , HA.style "border" "2px solid black"
-                    , HE.onClick RandomizePermutation
+                    , HE.onClick Randomize
                     ]
                     []
                 ]
             ]
-        , Settings.viewEditSettings model.settings
+        , Settings.viewEditSettings model.mode model.settings
         ]
 
 
@@ -326,6 +319,7 @@ init flags =
     in
     ( { settings = randomSettings
       , randomSeed = newSeed
+      , mode = Permutation
       }
     , Settings.render randomSettings
     )
