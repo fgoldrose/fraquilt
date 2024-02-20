@@ -8,7 +8,7 @@ export type Ports = {
     readonly renderImage: {
         subscribe: (callback: (args: {
             level: number,
-            initialVariables: number[],
+            initialVariables: string[],
             colorAdjustments: {
                 tl: number[],
                 tr: number[],

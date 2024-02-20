@@ -13,3 +13,4 @@ type Msg
     | EndSelection Int
     | CancelSelection
     | ToggleMode Mode
+    | ShowHelpInfo Bool

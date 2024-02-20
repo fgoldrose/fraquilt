@@ -1,12 +1,14 @@
 import { Elm } from "./src/Main.elm";
 
+type Permutation = number[];
 type ColorAdjustments = {
-    tl: number[],
-    tr: number[],
-    bl: number[],
-    br: number[]
+    tl: Permutation,
+    tr: Permutation,
+    bl: Permutation,
+    br: Permutation
 };
-type ColorVariables = number[];
+type Color = { r: number, g: number, b: number };
+type ColorVariables = Color[];
 type Coords = { x: number, y: number };
 
 const app = Elm.Main.init({
@@ -14,9 +16,16 @@ const app = Elm.Main.init({
     flags: { randomSeed: new Date().getMilliseconds() }
 });
 app.ports.renderImage.subscribe(({ colorAdjustments, level, initialVariables }) => {
-    generateImage(colorAdjustments, level, initialVariables);
+    const initialVarsColors = initialVariables.map(hexToRgb);
+    generateImage(colorAdjustments, level, initialVarsColors);
 })
 
+function hexToRgb(hex: string): Color {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return { r, g, b };
+}
 
 function generateImage(colorAdjustments: ColorAdjustments, level: number, initialVariables: ColorVariables) {
     const canvas = <HTMLCanvasElement>document.getElementById("canvas");
@@ -52,16 +61,16 @@ function fraquilt(imageData: ImageData, colorAdjustments: ColorAdjustments, leve
 }
 
 // Utils
-function setPixelColor(imageData: ImageData, [r, g, b,]: number[], { x, y }: Coords) {
+function setPixelColor(imageData: ImageData, [color]: ColorVariables, { x, y }: Coords) {
     const i = y * (imageData.width * 4) + x * 4;
     const buf = imageData.data;
-    buf[i] = r;
-    buf[i + 1] = g;
-    buf[i + 2] = b;
+    buf[i] = color.r;
+    buf[i + 1] = color.g;
+    buf[i + 2] = color.b;
     buf[i + 3] = 255;
 }
 
-function permute(adjustmentArray: number[], colorVariables: number[]) {
+function permute(adjustmentArray: Permutation, colorVariables: ColorVariables) {
     const newColorVariables = [...colorVariables];
     for (let i = 0; i < colorVariables.length; i++) {
         newColorVariables[i] = colorVariables[adjustmentArray[i]];
@@ -84,8 +93,4 @@ function bottomLeftLocation({ x, y }: Coords, level: number) {
 }
 function bottomRightLocation({ x, y }: Coords, level: number) {
     return { x: x + pixelSizeForLevel(level - 1), y: y + pixelSizeForLevel(level - 1) };
-}
-
-function randomInRange(min: number, max: number) {
-    return Math.floor(Math.random() * (max - min)) + min;
 }

@@ -6,6 +6,7 @@ import ColorAdjustments
 import Html exposing (Html)
 import Html.Attributes as HA
 import Html.Events as HE
+import Info
 import List.Extra
 import Messages exposing (Msg(..))
 import Random
@@ -17,12 +18,27 @@ type alias Model =
     { settings : Settings
     , randomSeed : Random.Seed
     , mode : Mode
+    , showHelp : Bool
     }
 
 
 randomizeModel : Int -> Model -> ( Model, Cmd msg )
 randomizeModel numVars model =
     let
+        oldNumVars =
+            Array.length model.settings.initialVariables
+
+        initVars =
+            if oldNumVars == numVars then
+                model.settings.initialVariables
+
+            else if numVars > oldNumVars then
+                Array.append model.settings.initialVariables
+                    (Array.repeat (numVars - oldNumVars) "#000000")
+
+            else
+                Array.slice 0 numVars model.settings.initialVariables
+
         randomizeFunction =
             case model.mode of
                 Permutation ->
@@ -34,7 +50,8 @@ randomizeModel numVars model =
         ( randomSettings, newSeed ) =
             Random.step
                 (randomizeFunction
-                    { numVars = numVars
+                    { initVars = initVars
+                    , numVars = numVars
                     , level = model.settings.level
                     }
                 )
@@ -58,21 +75,16 @@ update msg ({ settings } as model) =
             model |> randomizeModel (Array.length model.settings.initialVariables)
 
         UpdateInitialVar index stringValue ->
-            case String.toInt stringValue of
-                Nothing ->
-                    ( model, Cmd.none )
-
-                Just value ->
-                    let
-                        newSettings =
-                            { settings
-                                | initialVariables =
-                                    Array.set index value settings.initialVariables
-                            }
-                    in
-                    ( { model | settings = newSettings }
-                    , Settings.render newSettings
-                    )
+            let
+                newSettings =
+                    { settings
+                        | initialVariables =
+                            Array.set index stringValue settings.initialVariables
+                    }
+            in
+            ( { model | settings = newSettings }
+            , Settings.render newSettings
+            )
 
         ChangeLevel levelString ->
             case String.toInt levelString of
@@ -177,6 +189,9 @@ update msg ({ settings } as model) =
                 Free ->
                     ( { model | mode = Free }, Cmd.none )
 
+        ShowHelpInfo bool ->
+            ( { model | showHelp = bool }, Cmd.none )
+
 
 view : Model -> Html Msg
 view model =
@@ -216,7 +231,11 @@ view model =
                     []
                 ]
             ]
-        , Settings.viewEditSettings model.mode model.settings
+        , if model.showHelp then
+            Info.helpView
+
+          else
+            Settings.viewEditSettings model.mode model.settings
         ]
 
 
@@ -233,13 +252,17 @@ init flags =
         ( randomSettings, newSeed ) =
             Random.step
                 (Settings.randomPermutations
-                    { numVars = 4, level = 9 }
+                    { initVars = Array.fromList [ "#ffffff", "#808080", "#000000" ]
+                    , numVars = 3
+                    , level = 9
+                    }
                 )
                 randomSeed
     in
     ( { settings = randomSettings
       , randomSeed = newSeed
       , mode = Permutation
+      , showHelp = False
       }
     , Settings.render randomSettings
     )
