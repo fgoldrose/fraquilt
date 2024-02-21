@@ -266,8 +266,8 @@ view model =
             [ Html.div
                 [ HA.style "max-width" "90vw"
                 , HA.style "max-height" "90vh"
-                , HA.style "width" "90vh"
-                , HA.style "height" "90vh"
+                , HA.style "width" "90vmin"
+                , HA.style "height" "90vmin"
                 ]
                 [ Html.canvas
                     [ HA.id "canvas"
