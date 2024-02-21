@@ -60,6 +60,25 @@ update msg ({ settings } as model) =
         Randomize ->
             randomizeModel model
 
+        ClearPermutations ->
+            let
+                numVars =
+                    Array.length settings.initialVariables
+
+                newSettings =
+                    { settings
+                        | tl = List.range 0 (numVars - 1)
+                        , tr = List.range 0 (numVars - 1)
+                        , bl = List.range 0 (numVars - 1)
+                        , br = List.range 0 (numVars - 1)
+                    }
+            in
+            ( { model
+                | settings = newSettings
+              }
+            , Settings.render newSettings
+            )
+
         UpdateInitialVar index stringValue ->
             let
                 newSettings =

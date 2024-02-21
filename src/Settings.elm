@@ -94,13 +94,6 @@ viewEditSettings currentMode settings =
         [ Html.div
             [ HA.style "position" "absolute"
             , HA.style "top" "10px"
-            , HA.style "left" "10px"
-            ]
-            [ Html.button [ HE.onClick Randomize ] [ Html.text "Random" ]
-            ]
-        , Html.div
-            [ HA.style "position" "absolute"
-            , HA.style "top" "10px"
             , HA.style "right" "10px"
             ]
             [ helpIcon
@@ -247,6 +240,16 @@ viewPermutationGrid mode settings =
             BottomRight
             mode
             settings.selectionState
+        ]
+    , Html.div
+        [ HA.style "display" "flex"
+        , HA.style "gap" "10px"
+        , HA.style "align-items" "center"
+        , HA.style "justify-items" "center"
+        , HA.style "margin" "5px"
+        ]
+        [ Html.button [ HE.onClick Randomize ] [ Html.text "Random" ]
+        , Html.button [ HE.onClick ClearPermutations ] [ Html.text "Clear" ]
         ]
     ]
         |> sectionWithName "Permutations"

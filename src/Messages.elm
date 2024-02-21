@@ -6,6 +6,7 @@ import Types exposing (Mode, Quadrant)
 type Msg
     = NoOp
     | Randomize
+    | ClearPermutations
     | UpdateInitialVar Int String
     | ChangeLevel String
     | ChangeNumberOfVariables Int
