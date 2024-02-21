@@ -1,5 +1,6 @@
 module Permutation exposing (..)
 
+import Dict
 import Html exposing (Html)
 import Html.Attributes as HA
 import Html.Events as HE
@@ -27,11 +28,46 @@ setNewLine fromIndex toIndex colorArray =
     List.Extra.setAt fromIndex toIndex colorArray
 
 
-view : Permutation -> Quadrant -> Mode -> SelectionState -> Html Msg
-view colorAdjustments quadrant mode selectionState =
+addN : Int -> Permutation -> Permutation
+addN n permutation =
+    let
+        startIndex =
+            getNumVars permutation
+    in
+    List.append permutation (List.range startIndex (startIndex + n - 1))
+
+
+removeN : Int -> Permutation -> Permutation
+removeN n permutation =
     let
         numVars =
-            getNumVars colorAdjustments
+            getNumVars permutation
+
+        badIndexes =
+            List.range (numVars - n) numVars
+
+        replaceIndexes =
+            badIndexes
+                |> List.filterMap
+                    (\index ->
+                        List.Extra.getAt index permutation
+                            |> Maybe.map (Tuple.pair index)
+                    )
+                |> Dict.fromList
+    in
+    permutation
+        |> List.take (numVars - n)
+        |> List.map
+            (\index ->
+                Dict.get index replaceIndexes |> Maybe.withDefault index
+            )
+
+
+view : Permutation -> Quadrant -> Mode -> SelectionState -> Html Msg
+view permutation quadrant mode selectionState =
+    let
+        numVars =
+            getNumVars permutation
 
         listRange =
             List.range 0 (numVars - 1)
@@ -49,7 +85,7 @@ view colorAdjustments quadrant mode selectionState =
             , HA.style "width" "100px"
             , HA.style "height" pixelSize
             ]
-            (lines colorAdjustments
+            (lines permutation
                 :: List.map
                     (dot
                         { side = Left
@@ -202,10 +238,10 @@ dot { side, totalVars, quadrant, selectionState, mode } index =
 
 
 lines : Permutation -> Html Msg
-lines colorAdjustments =
+lines permutation =
     let
         numVars =
-            List.length colorAdjustments
+            List.length permutation
     in
     Html.div
         [ HA.style "position" "absolute"
@@ -218,7 +254,7 @@ lines colorAdjustments =
             ]
             (List.filterMap
                 (\fromIndex ->
-                    List.Extra.getAt fromIndex colorAdjustments
+                    List.Extra.getAt fromIndex permutation
                         |> Maybe.map
                             (\toIndex ->
                                 line

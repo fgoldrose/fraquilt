@@ -22,23 +22,9 @@ type alias Model =
     }
 
 
-randomizeModel : Int -> Model -> ( Model, Cmd msg )
-randomizeModel numVars model =
+randomizeModel : Model -> ( Model, Cmd msg )
+randomizeModel model =
     let
-        oldNumVars =
-            Array.length model.settings.initialVariables
-
-        initVars =
-            if oldNumVars == numVars then
-                model.settings.initialVariables
-
-            else if numVars > oldNumVars then
-                Array.append model.settings.initialVariables
-                    (Array.repeat (numVars - oldNumVars) "#000000")
-
-            else
-                Array.slice 0 numVars model.settings.initialVariables
-
         randomizeFunction =
             case model.mode of
                 Permutation ->
@@ -50,8 +36,8 @@ randomizeModel numVars model =
         ( randomSettings, newSeed ) =
             Random.step
                 (randomizeFunction
-                    { initVars = initVars
-                    , numVars = numVars
+                    { initVars = model.settings.initialVariables
+                    , numVars = Array.length model.settings.initialVariables
                     , level = model.settings.level
                     }
                 )
@@ -72,7 +58,7 @@ update msg ({ settings } as model) =
             ( model, Cmd.none )
 
         Randomize ->
-            model |> randomizeModel (Array.length model.settings.initialVariables)
+            randomizeModel model
 
         UpdateInitialVar index stringValue ->
             let
@@ -103,7 +89,51 @@ update msg ({ settings } as model) =
                     )
 
         ChangeNumberOfVariables numVars ->
-            model |> randomizeModel numVars
+            if numVars < 2 then
+                ( model, Cmd.none )
+
+            else
+                let
+                    initialVariables =
+                        model.settings.initialVariables
+
+                    oldNumVars =
+                        Array.length initialVariables
+
+                    newSettings =
+                        if numVars == oldNumVars then
+                            settings
+
+                        else if numVars > oldNumVars then
+                            let
+                                varsToAdd =
+                                    numVars - oldNumVars
+                            in
+                            { settings
+                                | initialVariables =
+                                    Array.append initialVariables
+                                        (Array.repeat varsToAdd "#000000")
+                                , tl = Permutation.addN varsToAdd settings.tl
+                                , tr = Permutation.addN varsToAdd settings.tr
+                                , bl = Permutation.addN varsToAdd settings.bl
+                                , br = Permutation.addN varsToAdd settings.br
+                            }
+
+                        else
+                            let
+                                varsToRemove =
+                                    oldNumVars - numVars
+                            in
+                            { settings
+                                | initialVariables =
+                                    Array.slice 0 numVars initialVariables
+                                , tl = Permutation.removeN varsToRemove settings.tl
+                                , tr = Permutation.removeN varsToRemove settings.tr
+                                , bl = Permutation.removeN varsToRemove settings.bl
+                                , br = Permutation.removeN varsToRemove settings.br
+                            }
+                in
+                ( { model | settings = newSettings }, Settings.render newSettings )
 
         CancelSelection ->
             ( { model
@@ -184,7 +214,7 @@ update msg ({ settings } as model) =
             case mode of
                 Permutation ->
                     { model | mode = Permutation }
-                        |> randomizeModel (Array.length settings.initialVariables)
+                        |> randomizeModel
 
                 Free ->
                     ( { model | mode = Free }, Cmd.none )
