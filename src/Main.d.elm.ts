@@ -9,7 +9,7 @@ export type Ports = {
         subscribe: (callback: (args: {
             level: number,
             initialVariables: string[],
-            colorAdjustments: {
+            permutations: {
                 tl: number[],
                 tr: number[],
                 bl: number[],

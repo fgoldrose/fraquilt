@@ -2,13 +2,13 @@ module Main exposing (..)
 
 import Array
 import Browser
-import ColorAdjustments
 import Html exposing (Html)
 import Html.Attributes as HA
 import Html.Events as HE
 import Info
 import List.Extra
 import Messages exposing (Msg(..))
+import Permutation
 import Random
 import Settings exposing (Settings)
 import Types exposing (Mode(..), Quadrant(..), SelectionState(..))
@@ -146,7 +146,7 @@ update msg ({ settings } as model) =
                                 List.Extra.swapAt startIndex endIndex adjustments
 
                         Free ->
-                            \startIndex adjustments -> adjustments |> ColorAdjustments.setNewLine startIndex endIndex
+                            \startIndex adjustments -> adjustments |> Permutation.setNewLine startIndex endIndex
 
                 newSettings =
                     case settings.selectionState of

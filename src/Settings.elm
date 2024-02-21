@@ -1,12 +1,12 @@
 port module Settings exposing (..)
 
 import Array exposing (Array)
-import ColorAdjustments exposing (ColorAdjustments)
 import Html exposing (Html)
 import Html.Attributes as HA
 import Html.Events as HE
 import Json.Encode as Encode
 import Messages exposing (Msg(..))
+import Permutation exposing (Permutation)
 import Random
 import Svg
 import Svg.Attributes as SvgAttr
@@ -28,10 +28,10 @@ type alias InitialVariables =
 type alias Settings =
     { level : Int
     , initialVariables : InitialVariables
-    , tl : ColorAdjustments
-    , tr : ColorAdjustments
-    , bl : ColorAdjustments
-    , br : ColorAdjustments
+    , tl : Permutation
+    , tr : Permutation
+    , bl : Permutation
+    , br : Permutation
     , selectionState : SelectionState
     }
 
@@ -46,12 +46,12 @@ render settings =
                     Encode.string
                     settings.initialVariables
               )
-            , ( "colorAdjustments"
+            , ( "permutations"
               , Encode.object
-                    [ ( "tl", ColorAdjustments.encode settings.tl )
-                    , ( "tr", ColorAdjustments.encode settings.tr )
-                    , ( "bl", ColorAdjustments.encode settings.bl )
-                    , ( "br", ColorAdjustments.encode settings.br )
+                    [ ( "tl", Permutation.encode settings.tl )
+                    , ( "tr", Permutation.encode settings.tr )
+                    , ( "bl", Permutation.encode settings.bl )
+                    , ( "br", Permutation.encode settings.br )
                     ]
               )
             ]
@@ -118,7 +118,7 @@ viewEditSettings currentMode settings =
                 ]
                 [ Html.text "Configuration" ]
             , viewLevel settings.level
-            , viewColorAdjustmentGrid currentMode settings
+            , viewPermutationGrid currentMode settings
             , viewNumberOfVariables (Array.length settings.initialVariables)
             , viewInitialVars settings.initialVariables
             ]
@@ -224,26 +224,26 @@ viewNumberOfVariables numVars =
         |> sectionWithName "Number of colors"
 
 
-viewColorAdjustmentGrid : Mode -> Settings -> Html Msg
-viewColorAdjustmentGrid mode settings =
+viewPermutationGrid : Mode -> Settings -> Html Msg
+viewPermutationGrid mode settings =
     [ Html.div
         [ HA.style "display" "grid"
         , HA.style "grid-template-columns" "100px 100px"
         , HA.style "grid-gap" "30px"
         ]
-        [ ColorAdjustments.view settings.tl
+        [ Permutation.view settings.tl
             TopLeft
             mode
             settings.selectionState
-        , ColorAdjustments.view settings.tr
+        , Permutation.view settings.tr
             TopRight
             mode
             settings.selectionState
-        , ColorAdjustments.view settings.bl
+        , Permutation.view settings.bl
             BottomLeft
             mode
             settings.selectionState
-        , ColorAdjustments.view settings.br
+        , Permutation.view settings.br
             BottomRight
             mode
             settings.selectionState
@@ -281,10 +281,10 @@ random { initVars, numVars, level } =
             , selectionState = NoneSelected
             }
         )
-        (ColorAdjustments.random numVars)
-        (ColorAdjustments.random numVars)
-        (ColorAdjustments.random numVars)
-        (ColorAdjustments.random numVars)
+        (Permutation.random numVars)
+        (Permutation.random numVars)
+        (Permutation.random numVars)
+        (Permutation.random numVars)
 
 
 randomPermutations : { initVars : InitialVariables, numVars : Int, level : Int } -> Random.Generator Settings
@@ -300,7 +300,7 @@ randomPermutations { initVars, numVars, level } =
             , selectionState = NoneSelected
             }
         )
-        (ColorAdjustments.randomPermutation numVars)
-        (ColorAdjustments.randomPermutation numVars)
-        (ColorAdjustments.randomPermutation numVars)
-        (ColorAdjustments.randomPermutation numVars)
+        (Permutation.randomPermutation numVars)
+        (Permutation.randomPermutation numVars)
+        (Permutation.randomPermutation numVars)
+        (Permutation.randomPermutation numVars)

@@ -1,7 +1,7 @@
 import { Elm } from "./src/Main.elm";
 
 type Permutation = number[];
-type ColorAdjustments = {
+type Permutations = {
     tl: Permutation,
     tr: Permutation,
     bl: Permutation,
@@ -15,9 +15,9 @@ const app = Elm.Main.init({
     node: document.getElementById("elm")!,
     flags: { randomSeed: new Date().getMilliseconds() }
 });
-app.ports.renderImage.subscribe(({ colorAdjustments, level, initialVariables }) => {
+app.ports.renderImage.subscribe(({ permutations, level, initialVariables }) => {
     const initialVarsColors = initialVariables.map(hexToRgb);
-    generateImage(colorAdjustments, level, initialVarsColors);
+    generateImage(permutations, level, initialVarsColors);
 })
 
 function hexToRgb(hex: string): Color {
@@ -27,34 +27,34 @@ function hexToRgb(hex: string): Color {
     return { r, g, b };
 }
 
-function generateImage(colorAdjustments: ColorAdjustments, level: number, initialVariables: ColorVariables) {
+function generateImage(permutations: Permutations, level: number, initialVariables: ColorVariables) {
     const canvas = <HTMLCanvasElement>document.getElementById("canvas");
     const ctx = canvas.getContext("2d")!;
     const pixelSize = pixelSizeForLevel(level);
     canvas.width = pixelSize;
     canvas.height = pixelSize;
     const imageData = ctx.createImageData(pixelSize, pixelSize);
-    fraquilt(imageData, colorAdjustments, level, initialVariables, { x: 0, y: 0 })
+    fraquilt(imageData, permutations, level, initialVariables, { x: 0, y: 0 })
 
     ctx.putImageData(imageData, 0, 0);
 }
 
-function fraquilt(imageData: ImageData, colorAdjustments: ColorAdjustments, level: number, colorVariables: ColorVariables, location: Coords) {
+function fraquilt(imageData: ImageData, permutations: Permutations, level: number, colorVariables: ColorVariables, location: Coords) {
     if (level == 0) {
         setPixelColor(imageData, colorVariables, location);
     }
     else {
-        const { tl, tr, bl, br } = colorAdjustments;
-        fraquilt(imageData, colorAdjustments, level - 1,
+        const { tl, tr, bl, br } = permutations;
+        fraquilt(imageData, permutations, level - 1,
             permute(tl, colorVariables), topLeftLocation(location, level)
         );
-        fraquilt(imageData, colorAdjustments, level - 1,
+        fraquilt(imageData, permutations, level - 1,
             permute(tr, colorVariables), topRightLocation(location, level)
         );
-        fraquilt(imageData, colorAdjustments, level - 1,
+        fraquilt(imageData, permutations, level - 1,
             permute(bl, colorVariables), bottomLeftLocation(location, level)
         );
-        fraquilt(imageData, colorAdjustments, level - 1,
+        fraquilt(imageData, permutations, level - 1,
             permute(br, colorVariables), bottomRightLocation(location, level)
         );
     }

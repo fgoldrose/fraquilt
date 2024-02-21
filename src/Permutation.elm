@@ -1,4 +1,4 @@
-module ColorAdjustments exposing (..)
+module Permutation exposing (..)
 
 import Html exposing (Html)
 import Html.Attributes as HA
@@ -13,21 +13,21 @@ import Svg.Attributes
 import Types exposing (Mode(..), Quadrant(..), SelectionState(..), getSelectedForQuadrant)
 
 
-type alias ColorAdjustments =
+type alias Permutation =
     List Int
 
 
-getNumVars : ColorAdjustments -> Int
+getNumVars : Permutation -> Int
 getNumVars colorArray =
     List.length colorArray
 
 
-setNewLine : Int -> Int -> ColorAdjustments -> ColorAdjustments
+setNewLine : Int -> Int -> Permutation -> Permutation
 setNewLine fromIndex toIndex colorArray =
     List.Extra.setAt fromIndex toIndex colorArray
 
 
-view : ColorAdjustments -> Quadrant -> Mode -> SelectionState -> Html Msg
+view : Permutation -> Quadrant -> Mode -> SelectionState -> Html Msg
 view colorAdjustments quadrant mode selectionState =
     let
         numVars =
@@ -201,7 +201,7 @@ dot { side, totalVars, quadrant, selectionState, mode } index =
         []
 
 
-lines : ColorAdjustments -> Html Msg
+lines : Permutation -> Html Msg
 lines colorAdjustments =
     let
         numVars =
@@ -259,17 +259,17 @@ line { totalVars, fromIndex, toIndex } =
         []
 
 
-encode : ColorAdjustments -> Encode.Value
+encode : Permutation -> Encode.Value
 encode adjustments =
     Encode.list Encode.int adjustments
 
 
-random : Int -> Random.Generator ColorAdjustments
+random : Int -> Random.Generator Permutation
 random numVars =
     Random.list numVars (Random.int 0 (numVars - 1))
 
 
-randomPermutation : Int -> Random.Generator ColorAdjustments
+randomPermutation : Int -> Random.Generator Permutation
 randomPermutation numVars =
     -- Version that produces a one to one permutation
     Random.List.shuffle (List.range 0 (numVars - 1))
