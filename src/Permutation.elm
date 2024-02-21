@@ -138,7 +138,7 @@ dot { side, totalVars, quadrant, selectionState, mode } index =
         maybeSelectedIndex =
             getSelectedForQuadrant quadrant selectionState
 
-        ( leftModeStyles, rightModeStyles ) =
+        ( rightModeStyles, leftModeStyles ) =
             case mode of
                 Permutation ->
                     ( case maybeSelectedIndex of
@@ -199,22 +199,22 @@ dot { side, totalVars, quadrant, selectionState, mode } index =
                             , [ HA.style "background-color" "black" ]
                             )
 
-        leftStyles =
-            [ HA.style "left" "0"
-            , HA.style "transform" "translate(-50%, -50%)"
+        rightStyles =
+            [ HA.style "right" "0"
+            , HA.style "transform" "translate(50%, -50%)"
             , HA.style "cursor" "pointer"
             , HA.style "filter" "drop-shadow(5px 5px 2px rgba(0, 0, 0, 0.5))"
             , HA.style "transition" "background-color 0.2s ease-in"
             ]
-                ++ leftModeStyles
+                ++ rightModeStyles
 
-        rightStyles =
-            [ HA.style "right" "0"
-            , HA.style "transform" "translate(50%, -50%)"
+        leftStyles =
+            [ HA.style "left" "0"
+            , HA.style "transform" "translate(-50%, -50%)"
             , HA.style "filter" "drop-shadow(5px 5px 2px rgba(0, 0, 0, 0.5))"
             , HA.style "transition" "background-color 0.2s ease-in"
             ]
-                ++ rightModeStyles
+                ++ leftModeStyles
     in
     Html.div
         ([ HA.style "width" "20px"
@@ -253,10 +253,10 @@ lines permutation =
             , HA.style "overflow" "visible"
             ]
             (List.filterMap
-                (\fromIndex ->
-                    List.Extra.getAt fromIndex permutation
+                (\toIndex ->
+                    List.Extra.getAt toIndex permutation
                         |> Maybe.map
-                            (\toIndex ->
+                            (\fromIndex ->
                                 line
                                     { totalVars = numVars
                                     , fromIndex = fromIndex
