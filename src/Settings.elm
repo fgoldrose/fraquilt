@@ -86,7 +86,7 @@ setUrl key settings =
                 ]
 
         appUrl =
-            { path = []
+            { path = [ "fraquilt" ]
             , fragment = Nothing
             , queryParameters = queryParameters
             }
