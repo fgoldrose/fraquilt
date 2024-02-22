@@ -12,7 +12,6 @@ type ColorVariables = Color[];
 type Coords = { x: number, y: number };
 
 const app = Elm.Main.init({
-    node: document.getElementById("elm")!,
     flags: { randomSeed: new Date().getMilliseconds() }
 });
 app.ports.renderImage.subscribe(({ permutations, level, initialVariables }) => {

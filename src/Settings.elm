@@ -1,9 +1,13 @@
 port module Settings exposing (..)
 
+import AppUrl exposing (AppUrl)
 import Array exposing (Array)
+import Browser.Navigation as Nav
+import Dict
 import Html exposing (Html)
 import Html.Attributes as HA
 import Html.Events as HE
+import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 import Messages exposing (Msg(..))
 import Permutation exposing (Permutation)
@@ -32,33 +36,78 @@ type alias Settings =
     , tr : Permutation
     , bl : Permutation
     , br : Permutation
-    , selectionState : SelectionState
     }
+
+
+settingsEncoder : Settings -> Encode.Value
+settingsEncoder settings =
+    Encode.object
+        [ ( "level", Encode.int settings.level )
+        , ( "initialVariables"
+          , Encode.array
+                Encode.string
+                settings.initialVariables
+          )
+        , ( "permutations"
+          , Encode.object
+                [ ( "tl", Permutation.encode settings.tl )
+                , ( "tr", Permutation.encode settings.tr )
+                , ( "bl", Permutation.encode settings.bl )
+                , ( "br", Permutation.encode settings.br )
+                ]
+          )
+        ]
+
+
+settingsDecoder : Decoder Settings
+settingsDecoder =
+    Decode.map6
+        Settings
+        (Decode.field "level" Decode.int)
+        (Decode.field "initialVariables" (Decode.array Decode.string))
+        (Decode.field "permutations" (Decode.field "tl" Permutation.decoder))
+        (Decode.field "permutations" (Decode.field "tr" Permutation.decoder))
+        (Decode.field "permutations" (Decode.field "bl" Permutation.decoder))
+        (Decode.field "permutations" (Decode.field "br" Permutation.decoder))
+
+
+change : Nav.Key -> Settings -> Cmd msg
+change key settings =
+    Cmd.batch
+        [ render settings
+        , setUrl key settings
+        ]
 
 
 render : Settings -> Cmd msg
 render settings =
-    renderImage <|
-        Encode.object
-            [ ( "level", Encode.int settings.level )
-            , ( "initialVariables"
-              , Encode.array
-                    Encode.string
-                    settings.initialVariables
-              )
-            , ( "permutations"
-              , Encode.object
-                    [ ( "tl", Permutation.encode settings.tl )
-                    , ( "tr", Permutation.encode settings.tr )
-                    , ( "bl", Permutation.encode settings.bl )
-                    , ( "br", Permutation.encode settings.br )
-                    ]
-              )
-            ]
+    renderImage (settingsEncoder settings)
 
 
-viewEditSettings : Mode -> Settings -> Html Msg
-viewEditSettings currentMode settings =
+setUrl : Nav.Key -> Settings -> Cmd msg
+setUrl key settings =
+    let
+        appUrl =
+            { path = []
+            , fragment = Nothing
+            , queryParameters = Dict.singleton "settings" [ Encode.encode 0 (settingsEncoder settings) ]
+            }
+    in
+    Nav.pushUrl key (AppUrl.toString appUrl)
+
+
+fromUrl : AppUrl -> Maybe Settings
+fromUrl appUrl =
+    Dict.get "settings" appUrl.queryParameters
+        |> Maybe.andThen List.head
+        |> Maybe.andThen
+            (Decode.decodeString settingsDecoder
+                >> Result.toMaybe
+            )
+
+
+viewEditSettings : Mode -> SelectionState -> Settings -> Html Msg
+viewEditSettings currentMode selectionState settings =
     let
         modeToggleButton : Mode -> Html Msg
         modeToggleButton modeButton =
@@ -111,7 +160,7 @@ viewEditSettings currentMode settings =
                 ]
                 [ Html.text "Configuration" ]
             , viewLevel settings.level
-            , viewPermutationGrid currentMode settings
+            , viewPermutationGrid currentMode selectionState settings
             , viewNumberOfVariables (Array.length settings.initialVariables)
             , viewInitialVars settings.initialVariables
             ]
@@ -217,8 +266,8 @@ viewNumberOfVariables numVars =
         |> sectionWithName "Number of colors"
 
 
-viewPermutationGrid : Mode -> Settings -> Html Msg
-viewPermutationGrid mode settings =
+viewPermutationGrid : Mode -> SelectionState -> Settings -> Html Msg
+viewPermutationGrid mode selectionState settings =
     [ Html.div
         [ HA.style "display" "grid"
         , HA.style "grid-template-columns" "100px 100px"
@@ -227,19 +276,19 @@ viewPermutationGrid mode settings =
         [ Permutation.view settings.tl
             TopLeft
             mode
-            settings.selectionState
+            selectionState
         , Permutation.view settings.tr
             TopRight
             mode
-            settings.selectionState
+            selectionState
         , Permutation.view settings.bl
             BottomLeft
             mode
-            settings.selectionState
+            selectionState
         , Permutation.view settings.br
             BottomRight
             mode
-            settings.selectionState
+            selectionState
         ]
     , Html.div
         [ HA.style "display" "flex"
@@ -281,7 +330,6 @@ random { initVars, numVars, level } =
             , tr = tr
             , bl = bl
             , br = br
-            , selectionState = NoneSelected
             }
         )
         (Permutation.random numVars)
@@ -300,7 +348,6 @@ randomPermutations { initVars, numVars, level } =
             , tr = tr
             , bl = bl
             , br = br
-            , selectionState = NoneSelected
             }
         )
         (Permutation.randomPermutation numVars)

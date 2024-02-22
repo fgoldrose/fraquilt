@@ -4,6 +4,7 @@ import Dict
 import Html exposing (Html)
 import Html.Attributes as HA
 import Html.Events as HE
+import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 import List.Extra
 import Messages exposing (Msg(..))
@@ -298,6 +299,11 @@ line { totalVars, fromIndex, toIndex } =
 encode : Permutation -> Encode.Value
 encode adjustments =
     Encode.list Encode.int adjustments
+
+
+decoder : Decoder Permutation
+decoder =
+    Decode.list Decode.int
 
 
 random : Int -> Random.Generator Permutation

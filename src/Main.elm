@@ -1,23 +1,30 @@
 module Main exposing (..)
 
+import AppUrl
 import Array
 import Browser
+import Browser.Navigation as Nav
+import Dict
 import Html exposing (Html)
 import Html.Attributes as HA
 import Html.Events as HE
 import Info
+import Json.Decode as Decode
 import List.Extra
 import Messages exposing (Msg(..))
 import Permutation
 import Random
 import Settings exposing (Settings)
 import Types exposing (Mode(..), Quadrant(..), SelectionState(..))
+import Url exposing (Url)
 
 
 type alias Model =
     { settings : Settings
+    , key : Nav.Key
     , randomSeed : Random.Seed
     , mode : Mode
+    , selectionState : SelectionState
     , showHelp : Bool
     }
 
@@ -47,7 +54,7 @@ randomizeModel model =
         | settings = randomSettings
         , randomSeed = newSeed
       }
-    , Settings.render randomSettings
+    , Settings.change model.key randomSettings
     )
 
 
@@ -56,6 +63,32 @@ update msg ({ settings } as model) =
     case msg of
         NoOp ->
             ( model, Cmd.none )
+
+        OnUrlChange url ->
+            case Settings.fromUrl (AppUrl.fromUrl url) of
+                Nothing ->
+                    ( model, Cmd.none )
+
+                Just urlSettings ->
+                    if urlSettings == settings then
+                        ( model, Cmd.none )
+
+                    else
+                        ( { model | settings = urlSettings }
+                        , Settings.render urlSettings
+                        )
+
+        OnUrlRequest urlRequest ->
+            case urlRequest of
+                Browser.Internal url ->
+                    ( model
+                    , Nav.pushUrl model.key (Url.toString url)
+                    )
+
+                Browser.External url ->
+                    ( model
+                    , Nav.load url
+                    )
 
         Randomize ->
             randomizeModel model
@@ -76,7 +109,7 @@ update msg ({ settings } as model) =
             ( { model
                 | settings = newSettings
               }
-            , Settings.render newSettings
+            , Settings.change model.key newSettings
             )
 
         UpdateInitialVar index stringValue ->
@@ -88,7 +121,7 @@ update msg ({ settings } as model) =
                     }
             in
             ( { model | settings = newSettings }
-            , Settings.render newSettings
+            , Settings.change model.key newSettings
             )
 
         ChangeLevel levelString ->
@@ -104,7 +137,7 @@ update msg ({ settings } as model) =
                             }
                     in
                     ( { model | settings = newSettings }
-                    , Settings.render newSettings
+                    , Settings.change model.key newSettings
                     )
 
         ChangeNumberOfVariables numVars ->
@@ -152,36 +185,32 @@ update msg ({ settings } as model) =
                                 , br = Permutation.removeN varsToRemove settings.br
                             }
                 in
-                ( { model | settings = newSettings }, Settings.render newSettings )
+                ( { model | settings = newSettings }
+                , Settings.change model.key newSettings
+                )
 
         CancelSelection ->
             ( { model
-                | settings =
-                    { settings
-                        | selectionState = NoneSelected
-                    }
+                | selectionState = NoneSelected
               }
             , Cmd.none
             )
 
         StartSelection quadrant index ->
             ( { model
-                | settings =
-                    { settings
-                        | selectionState =
-                            case quadrant of
-                                TopLeft ->
-                                    TLSelected index
+                | selectionState =
+                    case quadrant of
+                        TopLeft ->
+                            TLSelected index
 
-                                TopRight ->
-                                    TRSelected index
+                        TopRight ->
+                            TRSelected index
 
-                                BottomLeft ->
-                                    BLSelected index
+                        BottomLeft ->
+                            BLSelected index
 
-                                BottomRight ->
-                                    BRSelected index
-                    }
+                        BottomRight ->
+                            BRSelected index
               }
             , Cmd.none
             )
@@ -198,7 +227,7 @@ update msg ({ settings } as model) =
                             \startIndex adjustments -> adjustments |> Permutation.setNewLine startIndex endIndex
 
                 newSettings =
-                    case settings.selectionState of
+                    case model.selectionState of
                         TLSelected startIndex ->
                             { settings
                                 | tl = modeFunction startIndex settings.tl
@@ -223,10 +252,10 @@ update msg ({ settings } as model) =
                             settings
             in
             ( { model
-                | settings =
-                    { newSettings | selectionState = NoneSelected }
+                | settings = newSettings
+                , selectionState = NoneSelected
               }
-            , Settings.render newSettings
+            , Settings.change model.key newSettings
             )
 
         ToggleMode mode ->
@@ -242,78 +271,98 @@ update msg ({ settings } as model) =
             ( { model | showHelp = bool }, Cmd.none )
 
 
-view : Model -> Html Msg
+view : Model -> Browser.Document Msg
 view model =
-    Html.div
-        [ HA.style "display" "flex"
-        , HA.style "flex-direction" "row"
-        , HA.style "align-items" "center"
-        , HA.style "justify-content" "space-between"
-        , HA.style "height" "100vh"
-        , HA.style "width" "100vw"
-        , HA.style "flex-wrap" "wrap"
-        , HA.style "font-family" "sans-serif"
-        , HA.style "overflow" "auto"
-        ]
+    { title = "Fraquilt"
+    , body =
         [ Html.div
-            [ HA.style "cursor" "pointer"
-            , HA.style "margin" "10px"
-            , HA.style "display" "flex"
+            [ HA.style "display" "flex"
+            , HA.style "flex-direction" "row"
             , HA.style "align-items" "center"
-            , HA.style "justify-content" "center"
-            , HA.style "flex-grow" "1"
+            , HA.style "justify-content" "space-between"
+            , HA.style "height" "100vh"
+            , HA.style "width" "100vw"
+            , HA.style "flex-wrap" "wrap"
+            , HA.style "font-family" "sans-serif"
+            , HA.style "overflow" "auto"
             ]
             [ Html.div
-                [ HA.style "max-width" "90vw"
-                , HA.style "max-height" "90vh"
-                , HA.style "width" "90vmin"
-                , HA.style "height" "90vmin"
+                [ HA.style "cursor" "pointer"
+                , HA.style "margin" "10px"
+                , HA.style "display" "flex"
+                , HA.style "align-items" "center"
+                , HA.style "justify-content" "center"
+                , HA.style "flex-grow" "1"
                 ]
-                [ Html.canvas
-                    [ HA.id "canvas"
-                    , HA.style "width" "100%"
-                    , HA.style "height" "100%"
-                    , HA.style "image-rendering" "pixelated"
-                    , HA.style "border" "2px solid black"
-                    , HE.onClick Randomize
+                [ Html.div
+                    [ HA.style "max-width" "90vw"
+                    , HA.style "max-height" "90vh"
+                    , HA.style "width" "90vmin"
+                    , HA.style "height" "90vmin"
                     ]
-                    []
+                    [ Html.canvas
+                        [ HA.id "canvas"
+                        , HA.style "width" "100%"
+                        , HA.style "height" "100%"
+                        , HA.style "image-rendering" "pixelated"
+                        , HA.style "border" "2px solid black"
+                        , HE.onClick Randomize
+                        ]
+                        []
+                    ]
                 ]
-            ]
-        , if model.showHelp then
-            Info.helpView
+            , if model.showHelp then
+                Info.helpView
 
-          else
-            Settings.viewEditSettings model.mode model.settings
+              else
+                Settings.viewEditSettings model.mode model.selectionState model.settings
+            ]
         ]
+    }
 
 
 type alias Flags =
     { randomSeed : Int }
 
 
-init : Flags -> ( Model, Cmd Msg )
-init flags =
+init : Flags -> Url -> Nav.Key -> ( Model, Cmd Msg )
+init flags url key =
     let
-        randomSeed =
-            Random.initialSeed flags.randomSeed
+        appUrl =
+            AppUrl.fromUrl url
 
-        ( randomSettings, newSeed ) =
-            Random.step
-                (Settings.randomPermutations
-                    { initVars = Array.fromList [ "#ffffff", "#808080", "#000000" ]
-                    , numVars = 3
-                    , level = 9
-                    }
-                )
-                randomSeed
+        -- Todo: handle decode error
+        maybeUrlSettings =
+            Dict.get "settings" appUrl.queryParameters
+                |> Maybe.andThen List.head
+                |> Maybe.andThen
+                    (Decode.decodeString Settings.settingsDecoder
+                        >> Result.toMaybe
+                    )
+
+        ( settings, randomSeed ) =
+            case maybeUrlSettings of
+                Just urlSettings ->
+                    ( urlSettings, Random.initialSeed flags.randomSeed )
+
+                Nothing ->
+                    Random.step
+                        (Settings.randomPermutations
+                            { initVars = Array.fromList [ "#ffffff", "#808080", "#000000" ]
+                            , numVars = 3
+                            , level = 9
+                            }
+                        )
+                        (Random.initialSeed flags.randomSeed)
     in
-    ( { settings = randomSettings
-      , randomSeed = newSeed
+    ( { settings = settings
+      , key = key
+      , randomSeed = randomSeed
       , mode = Permutation
+      , selectionState = NoneSelected
       , showHelp = False
       }
-    , Settings.render randomSettings
+    , Settings.change key settings
     )
 
 
@@ -324,9 +373,11 @@ subscriptions model =
 
 main : Program Flags Model Msg
 main =
-    Browser.element
+    Browser.application
         { init = init
         , view = view
         , update = update
         , subscriptions = subscriptions
+        , onUrlChange = OnUrlChange
+        , onUrlRequest = OnUrlRequest
         }
