@@ -4,9 +4,9 @@ import Dict
 import Html exposing (Html)
 import Html.Attributes as HA
 import Html.Events as HE
-import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 import List.Extra
+import Maybe.Extra
 import Messages exposing (Msg(..))
 import Random
 import Random.List
@@ -301,9 +301,19 @@ encode adjustments =
     Encode.list Encode.int adjustments
 
 
-decoder : Decoder Permutation
-decoder =
-    Decode.list Decode.int
+toUrlString : Permutation -> String
+toUrlString permutation =
+    permutation
+        |> List.map String.fromInt
+        |> String.join ","
+
+
+fromUrlString : String -> Maybe Permutation
+fromUrlString str =
+    str
+        |> String.split ","
+        |> List.map String.toInt
+        |> Maybe.Extra.combine
 
 
 random : Int -> Random.Generator Permutation

@@ -7,7 +7,6 @@ import Dict
 import Html exposing (Html)
 import Html.Attributes as HA
 import Html.Events as HE
-import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 import Messages exposing (Msg(..))
 import Permutation exposing (Permutation)
@@ -59,18 +58,6 @@ settingsEncoder settings =
         ]
 
 
-settingsDecoder : Decoder Settings
-settingsDecoder =
-    Decode.map6
-        Settings
-        (Decode.field "level" Decode.int)
-        (Decode.field "initialVariables" (Decode.array Decode.string))
-        (Decode.field "permutations" (Decode.field "tl" Permutation.decoder))
-        (Decode.field "permutations" (Decode.field "tr" Permutation.decoder))
-        (Decode.field "permutations" (Decode.field "bl" Permutation.decoder))
-        (Decode.field "permutations" (Decode.field "br" Permutation.decoder))
-
-
 change : Nav.Key -> Settings -> Cmd msg
 change key settings =
     Cmd.batch
@@ -87,10 +74,21 @@ render settings =
 setUrl : Nav.Key -> Settings -> Cmd msg
 setUrl key settings =
     let
+        queryParameters =
+            Dict.fromList
+                [ ( "level", [ String.fromInt settings.level ] )
+                , ( "colors", [ String.join "," (Array.toList settings.initialVariables) ] )
+                , ( "tl", [ Permutation.toUrlString settings.tl ] )
+                , ( "tr", [ Permutation.toUrlString settings.tr ] )
+                , ( "bl", [ Permutation.toUrlString settings.bl ] )
+                , ( "br", [ Permutation.toUrlString settings.br ] )
+                , ( "v", [ "0" ] ) -- so I can potentially change the url format in the future
+                ]
+
         appUrl =
             { path = []
             , fragment = Nothing
-            , queryParameters = Dict.singleton "settings" [ Encode.encode 0 (settingsEncoder settings) ]
+            , queryParameters = queryParameters
             }
     in
     Nav.pushUrl key (AppUrl.toString appUrl)
@@ -98,12 +96,37 @@ setUrl key settings =
 
 fromUrl : AppUrl -> Maybe Settings
 fromUrl appUrl =
-    Dict.get "settings" appUrl.queryParameters
-        |> Maybe.andThen List.head
-        |> Maybe.andThen
-            (Decode.decodeString settingsDecoder
-                >> Result.toMaybe
-            )
+    let
+        getPermutation : String -> Maybe Permutation
+        getPermutation key =
+            Dict.get key appUrl.queryParameters
+                |> Maybe.andThen List.head
+                |> Maybe.andThen Permutation.fromUrlString
+
+        maybePermutations =
+            Maybe.map4 (\tl tr bl br -> { tl = tl, tr = tr, bl = bl, br = br })
+                (getPermutation "tl")
+                (getPermutation "tr")
+                (getPermutation "bl")
+                (getPermutation "br")
+    in
+    Maybe.map3
+        (\level colors permutations ->
+            { level = level
+            , initialVariables = colors
+            , tl = permutations.tl
+            , tr = permutations.tr
+            , bl = permutations.bl
+            , br = permutations.br
+            }
+        )
+        (Dict.get "level" appUrl.queryParameters |> Maybe.andThen List.head |> Maybe.andThen String.toInt)
+        (Dict.get "colors" appUrl.queryParameters
+            |> Maybe.andThen List.head
+            |> Maybe.map (String.split ",")
+            |> Maybe.map Array.fromList
+        )
+        maybePermutations
 
 
 viewEditSettings : Mode -> SelectionState -> Settings -> Html Msg

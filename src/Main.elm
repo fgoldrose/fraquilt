@@ -332,16 +332,8 @@ init flags url key =
             AppUrl.fromUrl url
 
         -- Todo: handle decode error
-        maybeUrlSettings =
-            Dict.get "settings" appUrl.queryParameters
-                |> Maybe.andThen List.head
-                |> Maybe.andThen
-                    (Decode.decodeString Settings.settingsDecoder
-                        >> Result.toMaybe
-                    )
-
         ( settings, randomSeed ) =
-            case maybeUrlSettings of
+            case Settings.fromUrl appUrl of
                 Just urlSettings ->
                     ( urlSettings, Random.initialSeed flags.randomSeed )
 
