@@ -16,6 +16,32 @@ type alias InitialVariables =
     Array Color
 
 
+set : Int -> Color -> InitialVariables -> InitialVariables
+set index color initialVariables =
+    Array.set index color initialVariables
+
+
+count : InitialVariables -> Int
+count initialVariables =
+    Array.length initialVariables
+
+
+addN : Int -> InitialVariables -> InitialVariables
+addN n initialVariables =
+    Array.append initialVariables
+        (Array.repeat n "#000000")
+
+
+removeN : Int -> InitialVariables -> InitialVariables
+removeN n initialVariables =
+    Array.slice 0 (Array.length initialVariables - n) initialVariables
+
+
+init3 : InitialVariables
+init3 =
+    Array.fromList [ "#ffffff", "#808080", "#000000" ]
+
+
 encode : InitialVariables -> Encode.Value
 encode initialVariables =
     Encode.array

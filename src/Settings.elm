@@ -1,9 +1,8 @@
 port module Settings exposing (..)
 
 import AppUrl exposing (AppUrl)
-import Array exposing (Array)
 import Browser.Navigation as Nav
-import Colors exposing (Color, InitialVariables)
+import Colors exposing (InitialVariables)
 import Dict
 import Html exposing (Html)
 import Html.Attributes as HA
@@ -148,7 +147,7 @@ viewEditSettings selectionState settings =
                 [ Html.text "Configuration" ]
             , viewLevel settings.level
             , viewPermutationGrid selectionState settings
-            , viewNumberOfVariables (Array.length settings.initialVariables)
+            , viewNumberOfVariables (Colors.count settings.initialVariables)
             , Colors.view UpdateInitialVar settings.initialVariables
                 |> sectionWithName "Initial Colors"
             ]

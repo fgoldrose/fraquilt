@@ -4,6 +4,7 @@ import AppUrl
 import Array
 import Browser
 import Browser.Navigation as Nav
+import Colors
 import Html
 import Html.Attributes as HA
 import Html.Events as HE
@@ -63,7 +64,7 @@ update msg ({ settings } as model) =
                     Random.step
                         (Settings.randomPermutations
                             { initVars = model.settings.initialVariables
-                            , numVars = Array.length model.settings.initialVariables
+                            , numVars = Colors.count model.settings.initialVariables
                             , level = model.settings.level
                             }
                         )
@@ -79,7 +80,7 @@ update msg ({ settings } as model) =
         ClearPermutations ->
             let
                 numVars =
-                    Array.length settings.initialVariables
+                    Colors.count settings.initialVariables
 
                 newSettings =
                     { settings
@@ -100,7 +101,7 @@ update msg ({ settings } as model) =
                 newSettings =
                     { settings
                         | initialVariables =
-                            Array.set index stringValue settings.initialVariables
+                            Colors.set index stringValue settings.initialVariables
                     }
             in
             ( { model | settings = newSettings }
@@ -133,7 +134,7 @@ update msg ({ settings } as model) =
                         model.settings.initialVariables
 
                     oldNumVars =
-                        Array.length initialVariables
+                        Colors.count initialVariables
 
                     newSettings =
                         if numVars == oldNumVars then
@@ -145,9 +146,7 @@ update msg ({ settings } as model) =
                                     numVars - oldNumVars
                             in
                             { settings
-                                | initialVariables =
-                                    Array.append initialVariables
-                                        (Array.repeat varsToAdd "#000000")
+                                | initialVariables = Colors.addN varsToAdd initialVariables
                                 , tl = Permutation.addN varsToAdd settings.tl
                                 , tr = Permutation.addN varsToAdd settings.tr
                                 , bl = Permutation.addN varsToAdd settings.bl
@@ -160,8 +159,7 @@ update msg ({ settings } as model) =
                                     oldNumVars - numVars
                             in
                             { settings
-                                | initialVariables =
-                                    Array.slice 0 numVars initialVariables
+                                | initialVariables = Colors.removeN varsToRemove initialVariables
                                 , tl = Permutation.removeN varsToRemove settings.tl
                                 , tr = Permutation.removeN varsToRemove settings.tr
                                 , bl = Permutation.removeN varsToRemove settings.bl
@@ -308,7 +306,7 @@ init flags url key =
                 Nothing ->
                     Random.step
                         (Settings.randomPermutations
-                            { initVars = Array.fromList [ "#ffffff", "#808080", "#000000" ]
+                            { initVars = Colors.init3
                             , numVars = 3
                             , level = 9
                             }
