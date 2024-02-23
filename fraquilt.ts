@@ -26,16 +26,24 @@ function hexToRgb(hex: string): Color {
     return { r, g, b };
 }
 
-function generateImage(permutations: Permutations, level: number, initialVariables: ColorVariables) {
-    const canvas = <HTMLCanvasElement>document.getElementById("canvas");
-    const ctx = canvas.getContext("2d")!;
-    const pixelSize = pixelSizeForLevel(level);
-    canvas.width = pixelSize;
-    canvas.height = pixelSize;
-    const imageData = ctx.createImageData(pixelSize, pixelSize);
-    fraquilt(imageData, permutations, level, initialVariables, { x: 0, y: 0 })
+function generateImage(permutations: Permutations, level: number, initialVariables: ColorVariables, tries = 0) {
+    const canvas = <HTMLCanvasElement | null>document.getElementById("canvas");
+    if (!canvas) {
+        // If the canvas isn't in the dom yet, try again in 100ms
+        if (tries < 5) {
+            setTimeout(() => generateImage(permutations, level, initialVariables, tries + 1), 100);
+        }
+    }
+    else {
+        const ctx = canvas.getContext("2d")!;
+        const pixelSize = pixelSizeForLevel(level);
+        canvas.width = pixelSize;
+        canvas.height = pixelSize;
+        const imageData = ctx.createImageData(pixelSize, pixelSize);
+        fraquilt(imageData, permutations, level, initialVariables, { x: 0, y: 0 })
 
-    ctx.putImageData(imageData, 0, 0);
+        ctx.putImageData(imageData, 0, 0);
+    }
 }
 
 function fraquilt(imageData: ImageData, permutations: Permutations, level: number, colorVariables: ColorVariables, location: Coords) {
