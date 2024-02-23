@@ -1,7 +1,6 @@
 module Main exposing (..)
 
 import AppUrl
-import Array
 import Browser
 import Browser.Navigation as Nav
 import Colors
@@ -11,8 +10,10 @@ import Html.Events as HE
 import Info
 import Messages exposing (Msg(..))
 import Permutation
+import PermutationGrid
 import Random
 import Settings exposing (Settings)
+import Tutorial
 import Types exposing (Quadrant(..), SelectionState(..))
 import Url exposing (Url)
 
@@ -23,6 +24,7 @@ type alias Model =
     , randomSeed : Random.Seed
     , selectionState : SelectionState
     , showHelp : Bool
+    , tutorial : Maybe Tutorial.Page
     }
 
 
@@ -33,18 +35,41 @@ update msg ({ settings } as model) =
             ( model, Cmd.none )
 
         OnUrlChange url ->
-            case Settings.fromUrl (AppUrl.fromUrl url) of
-                Nothing ->
-                    ( model, Cmd.none )
+            let
+                appUrl =
+                    AppUrl.fromUrl url
+            in
+            case appUrl.path of
+                [ "fraquilt", "tutorial" ] ->
+                    ( { model | tutorial = Just Tutorial.Intro }
+                    , Cmd.none
+                    )
 
-                Just urlSettings ->
-                    if urlSettings == settings then
-                        ( model, Cmd.none )
+                [ "fraquilt", "tutorial", pageNumber ] ->
+                    ( { model | tutorial = Just (Tutorial.initPage pageNumber) }
+                    , Cmd.none
+                    )
 
-                    else
-                        ( { model | settings = urlSettings }
-                        , Settings.render urlSettings
-                        )
+                _ ->
+                    case Settings.fromUrl (AppUrl.fromUrl url) of
+                        Nothing ->
+                            ( { model | tutorial = Nothing }
+                            , Settings.change model.key settings
+                            )
+
+                        Just urlSettings ->
+                            if urlSettings == settings then
+                                ( { model | tutorial = Nothing }
+                                , Cmd.none
+                                )
+
+                            else
+                                ( { model
+                                    | tutorial = Nothing
+                                    , settings = urlSettings
+                                  }
+                                , Settings.render urlSettings
+                                )
 
         OnUrlRequest urlRequest ->
             case urlRequest of
@@ -60,21 +85,19 @@ update msg ({ settings } as model) =
 
         Randomize ->
             let
-                ( randomSettings, newSeed ) =
+                ( randomPermutations, newSeed ) =
                     Random.step
-                        (Settings.randomPermutations
-                            { initVars = model.settings.initialVariables
-                            , numVars = Colors.count model.settings.initialVariables
-                            , level = model.settings.level
-                            }
-                        )
+                        (PermutationGrid.random (Colors.count model.settings.initialVariables))
                         model.randomSeed
+
+                updatedSettings =
+                    { settings | permutations = randomPermutations }
             in
             ( { model
-                | settings = randomSettings
+                | settings = updatedSettings
                 , randomSeed = newSeed
               }
-            , Settings.change model.key randomSettings
+            , Settings.change model.key updatedSettings
             )
 
         ClearPermutations ->
@@ -84,10 +107,7 @@ update msg ({ settings } as model) =
 
                 newSettings =
                     { settings
-                        | tl = List.range 0 (numVars - 1)
-                        , tr = List.range 0 (numVars - 1)
-                        , bl = List.range 0 (numVars - 1)
-                        , br = List.range 0 (numVars - 1)
+                        | permutations = PermutationGrid.clear numVars
                     }
             in
             ( { model
@@ -147,10 +167,12 @@ update msg ({ settings } as model) =
                             in
                             { settings
                                 | initialVariables = Colors.addN varsToAdd initialVariables
-                                , tl = Permutation.addN varsToAdd settings.tl
-                                , tr = Permutation.addN varsToAdd settings.tr
-                                , bl = Permutation.addN varsToAdd settings.bl
-                                , br = Permutation.addN varsToAdd settings.br
+                                , permutations =
+                                    { tl = Permutation.addN varsToAdd settings.permutations.tl
+                                    , tr = Permutation.addN varsToAdd settings.permutations.tr
+                                    , bl = Permutation.addN varsToAdd settings.permutations.bl
+                                    , br = Permutation.addN varsToAdd settings.permutations.br
+                                    }
                             }
 
                         else
@@ -160,10 +182,12 @@ update msg ({ settings } as model) =
                             in
                             { settings
                                 | initialVariables = Colors.removeN varsToRemove initialVariables
-                                , tl = Permutation.removeN varsToRemove settings.tl
-                                , tr = Permutation.removeN varsToRemove settings.tr
-                                , bl = Permutation.removeN varsToRemove settings.bl
-                                , br = Permutation.removeN varsToRemove settings.br
+                                , permutations =
+                                    { tl = Permutation.removeN varsToRemove settings.permutations.tl
+                                    , tr = Permutation.removeN varsToRemove settings.permutations.tr
+                                    , bl = Permutation.removeN varsToRemove settings.permutations.bl
+                                    , br = Permutation.removeN varsToRemove settings.permutations.br
+                                    }
                             }
                 in
                 ( { model | settings = newSettings }
@@ -198,33 +222,14 @@ update msg ({ settings } as model) =
 
         EndSelection endIndex ->
             let
-                swapFunction startIndex permutation =
-                    Permutation.swap startIndex endIndex permutation
-
                 newSettings =
-                    case model.selectionState of
-                        TLSelected startIndex ->
-                            { settings
-                                | tl = swapFunction startIndex settings.tl
-                            }
-
-                        TRSelected startIndex ->
-                            { settings
-                                | tr = swapFunction startIndex settings.tr
-                            }
-
-                        BLSelected startIndex ->
-                            { settings
-                                | bl = swapFunction startIndex settings.bl
-                            }
-
-                        BRSelected startIndex ->
-                            { settings
-                                | br = swapFunction startIndex settings.br
-                            }
-
-                        NoneSelected ->
-                            settings
+                    { settings
+                        | permutations =
+                            PermutationGrid.endSelection
+                                model.selectionState
+                                endIndex
+                                settings.permutations
+                    }
             in
             ( { model
                 | settings = newSettings
@@ -236,54 +241,71 @@ update msg ({ settings } as model) =
         ShowHelpInfo bool ->
             ( { model | showHelp = bool }, Cmd.none )
 
+        TutorialMsg tutorialMsg ->
+            case model.tutorial of
+                Just page ->
+                    let
+                        ( newPage, newCmd ) =
+                            Tutorial.update tutorialMsg page
+                    in
+                    ( { model | tutorial = Just newPage }, Cmd.map TutorialMsg newCmd )
+
+                Nothing ->
+                    ( model, Cmd.none )
+
 
 view : Model -> Browser.Document Msg
 view model =
     { title = "Fraquilt"
     , body =
-        [ Html.div
-            [ HA.style "display" "flex"
-            , HA.style "flex-direction" "row"
-            , HA.style "align-items" "center"
-            , HA.style "justify-content" "space-between"
-            , HA.style "height" "100vh"
-            , HA.style "width" "100vw"
-            , HA.style "flex-wrap" "wrap"
-            , HA.style "font-family" "sans-serif"
-            , HA.style "overflow" "auto"
-            ]
-            [ Html.div
-                [ HA.style "cursor" "pointer"
-                , HA.style "margin" "10px"
-                , HA.style "display" "flex"
-                , HA.style "align-items" "center"
-                , HA.style "justify-content" "center"
-                , HA.style "flex-grow" "1"
-                ]
-                [ Html.div
-                    [ HA.style "max-width" "90vw"
-                    , HA.style "max-height" "90vh"
-                    , HA.style "width" "90vmin"
-                    , HA.style "height" "90vmin"
-                    ]
-                    [ Html.canvas
-                        [ HA.id "canvas"
-                        , HA.style "width" "100%"
-                        , HA.style "height" "100%"
-                        , HA.style "image-rendering" "pixelated"
-                        , HA.style "border" "2px solid black"
-                        , HE.onClick Randomize
-                        ]
-                        []
-                    ]
-                ]
-            , if model.showHelp then
-                Info.helpView
+        case model.tutorial of
+            Just page ->
+                [ Tutorial.view page |> Html.map TutorialMsg ]
 
-              else
-                Settings.viewEditSettings model.selectionState model.settings
-            ]
-        ]
+            Nothing ->
+                [ Html.div
+                    [ HA.style "display" "flex"
+                    , HA.style "flex-direction" "row"
+                    , HA.style "align-items" "center"
+                    , HA.style "justify-content" "space-between"
+                    , HA.style "height" "100vh"
+                    , HA.style "width" "100vw"
+                    , HA.style "flex-wrap" "wrap"
+                    , HA.style "font-family" "sans-serif"
+                    , HA.style "overflow" "auto"
+                    ]
+                    [ Html.div
+                        [ HA.style "cursor" "pointer"
+                        , HA.style "margin" "10px"
+                        , HA.style "display" "flex"
+                        , HA.style "align-items" "center"
+                        , HA.style "justify-content" "center"
+                        , HA.style "flex-grow" "1"
+                        ]
+                        [ Html.div
+                            [ HA.style "max-width" "90vw"
+                            , HA.style "max-height" "90vh"
+                            , HA.style "width" "90vmin"
+                            , HA.style "height" "90vmin"
+                            ]
+                            [ Html.canvas
+                                [ HA.id "canvas"
+                                , HA.style "width" "100%"
+                                , HA.style "height" "100%"
+                                , HA.style "image-rendering" "pixelated"
+                                , HA.style "border" "2px solid black"
+                                , HE.onClick Randomize
+                                ]
+                                []
+                            ]
+                        ]
+                    , if model.showHelp then
+                        Info.helpView
+
+                      else
+                        Settings.viewEditSettings model.selectionState model.settings
+                    ]
+                ]
     }
 
 
@@ -304,23 +326,43 @@ init flags url key =
                     ( urlSettings, Random.initialSeed flags.randomSeed )
 
                 Nothing ->
-                    Random.step
-                        (Settings.randomPermutations
-                            { initVars = Colors.init3
-                            , numVars = 3
-                            , level = 9
-                            }
-                        )
-                        (Random.initialSeed flags.randomSeed)
+                    let
+                        ( permutations, seed ) =
+                            Random.step
+                                (PermutationGrid.random 3)
+                                (Random.initialSeed flags.randomSeed)
+                    in
+                    ( { level = 9
+                      , initialVariables = Colors.init3
+                      , permutations = permutations
+                      }
+                    , seed
+                    )
+
+        model =
+            { settings = settings
+            , key = key
+            , randomSeed = randomSeed
+            , selectionState = NoneSelected
+            , showHelp = False
+            , tutorial = Nothing
+            }
     in
-    ( { settings = settings
-      , key = key
-      , randomSeed = randomSeed
-      , selectionState = NoneSelected
-      , showHelp = False
-      }
-    , Settings.change key settings
-    )
+    case appUrl.path of
+        [ "fraquilt", "tutorial" ] ->
+            ( { model | tutorial = Just Tutorial.Intro }
+            , Cmd.none
+            )
+
+        [ "fraquilt", "tutorial", pageNumber ] ->
+            ( { model | tutorial = Just (Tutorial.initPage pageNumber) }
+            , Cmd.none
+            )
+
+        _ ->
+            ( model
+            , Settings.change key settings
+            )
 
 
 subscriptions : Model -> Sub Msg

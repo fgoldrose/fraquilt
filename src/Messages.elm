@@ -1,6 +1,7 @@
 module Messages exposing (..)
 
 import Browser
+import Tutorial
 import Types exposing (Quadrant)
 import Url exposing (Url)
 
@@ -18,3 +19,4 @@ type Msg
     | EndSelection Int
     | CancelSelection
     | ShowHelpInfo Bool
+    | TutorialMsg Tutorial.Msg

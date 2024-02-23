@@ -61,16 +61,46 @@ fromUrlString str =
         |> Array.fromList
 
 
-view : (Int -> String -> msg) -> InitialVariables -> List (Html msg)
+view : (Int -> String -> msg) -> InitialVariables -> Html msg
 view updateColorMsg initialVars =
-    List.indexedMap
-        (\index initVar ->
-            Html.input
-                [ HA.type_ "color"
-                , HA.id ("initVar-" ++ String.fromInt index)
-                , HA.value initVar
-                , HE.onInput (updateColorMsg index)
-                ]
-                []
+    Html.div
+        [ HA.style "display" "flex"
+        , HA.style "flex-direction" "column"
+        , HA.style "align-items" "center"
+        , HA.style "gap" "5px"
+        ]
+        (List.indexedMap
+            (\index initVar ->
+                Html.input
+                    [ HA.type_ "color"
+                    , HA.id ("initVar-" ++ String.fromInt index)
+                    , HA.value initVar
+                    , HE.onInput (updateColorMsg index)
+                    ]
+                    []
+            )
+            (Array.toList initialVars)
         )
-        (Array.toList initialVars)
+
+
+readOnlyView : InitialVariables -> Html msg
+readOnlyView initialVars =
+    Html.div
+        [ HA.style "display" "flex"
+        , HA.style "flex-direction" "column"
+        , HA.style "align-items" "center"
+        , HA.style "gap" "5px"
+        ]
+        (List.indexedMap
+            (\index initVar ->
+                Html.input
+                    [ HA.type_ "color"
+                    , HA.id ("initVar-" ++ String.fromInt index)
+                    , HA.value initVar
+                    , HA.disabled True
+                    , HA.readonly True
+                    ]
+                    []
+            )
+            (Array.toList initialVars)
+        )
