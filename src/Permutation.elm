@@ -238,7 +238,7 @@ dot { side, totalVars, quadrant, selectionState, mode } index =
         []
 
 
-lines : Permutation -> Html Msg
+lines : Permutation -> Html msg
 lines permutation =
     let
         numVars =
