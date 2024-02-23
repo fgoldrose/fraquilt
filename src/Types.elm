@@ -1,11 +1,6 @@
 module Types exposing (..)
 
 
-type Mode
-    = Permutation
-    | Free
-
-
 type Quadrant
     = TopLeft
     | TopRight

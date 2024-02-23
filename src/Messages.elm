@@ -1,7 +1,7 @@
 module Messages exposing (..)
 
 import Browser
-import Types exposing (Mode, Quadrant)
+import Types exposing (Quadrant)
 import Url exposing (Url)
 
 
@@ -17,5 +17,4 @@ type Msg
     | StartSelection Quadrant Int
     | EndSelection Int
     | CancelSelection
-    | ToggleMode Mode
     | ShowHelpInfo Bool

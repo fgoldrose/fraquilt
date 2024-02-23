@@ -12,7 +12,7 @@ import Random
 import Random.List
 import Svg exposing (Svg)
 import Svg.Attributes
-import Types exposing (Mode(..), Quadrant(..), SelectionState(..), getSelectedForQuadrant)
+import Types exposing (Quadrant(..), SelectionState(..), getSelectedForQuadrant)
 
 
 type alias Permutation =
@@ -64,8 +64,8 @@ removeN n permutation =
             )
 
 
-view : Permutation -> Quadrant -> Mode -> SelectionState -> Html Msg
-view permutation quadrant mode selectionState =
+view : Permutation -> Quadrant -> SelectionState -> Html Msg
+view permutation quadrant selectionState =
     let
         numVars =
             getNumVars permutation
@@ -93,7 +93,6 @@ view permutation quadrant mode selectionState =
                         , totalVars = numVars
                         , quadrant = quadrant
                         , selectionState = selectionState
-                        , mode = mode
                         }
                     )
                     listRange
@@ -103,7 +102,6 @@ view permutation quadrant mode selectionState =
                         , totalVars = numVars
                         , quadrant = quadrant
                         , selectionState = selectionState
-                        , mode = mode
                         }
                     )
                     listRange
@@ -130,75 +128,38 @@ dot :
     , totalVars : Int
     , quadrant : Quadrant
     , selectionState : SelectionState
-    , mode : Mode
     }
     -> Int
     -> Html Msg
-dot { side, totalVars, quadrant, selectionState, mode } index =
+dot { side, totalVars, quadrant, selectionState } index =
     let
         maybeSelectedIndex =
             getSelectedForQuadrant quadrant selectionState
 
         ( rightModeStyles, leftModeStyles ) =
-            case mode of
-                Permutation ->
-                    ( case maybeSelectedIndex of
-                        Just selectedIndex ->
-                            if selectedIndex == index then
-                                [ HA.style "background-color" "rgb(0, 0, 255)"
-                                , HA.style "outline" "2px solid rgba(0, 100, 255, 0.5)"
-                                , HE.onClick CancelSelection
-                                ]
+            ( case maybeSelectedIndex of
+                Just selectedIndex ->
+                    if selectedIndex == index then
+                        [ HA.style "background-color" "rgb(0, 0, 255)"
+                        , HA.style "outline" "2px solid rgba(0, 100, 255, 0.5)"
+                        , HE.onClick CancelSelection
+                        ]
 
-                            else
-                                [ HA.style "background-color" "rgb(0, 100, 255)"
-                                , HE.onClick (EndSelection index)
-                                ]
+                    else
+                        [ HA.style "background-color" "rgb(0, 100, 255)"
+                        , HE.onClick (EndSelection index)
+                        ]
 
-                        Nothing ->
-                            [ if selectionState == NoneSelected then
-                                HA.style "background-color" "rgb(0, 100, 255)"
+                Nothing ->
+                    [ if selectionState == NoneSelected then
+                        HA.style "background-color" "rgb(0, 100, 255)"
 
-                              else
-                                HA.style "background-color" "black"
-                            , HE.onClick (StartSelection quadrant index)
-                            ]
-                    , [ HA.style "background-color" "black" ]
-                    )
-
-                Free ->
-                    case maybeSelectedIndex of
-                        Just selectedIndex ->
-                            ( if selectedIndex == index then
-                                [ HA.style "background-color" "rgb(0, 0, 255)"
-                                , HA.style "outline" "2px solid rgba(0, 100, 255, 0.5)"
-                                , HE.onClick CancelSelection
-                                ]
-
-                              else
-                                [ if selectionState == NoneSelected then
-                                    HA.style "background-color" "rgb(0, 100, 255)"
-
-                                  else
-                                    HA.style "background-color" "black"
-                                , HE.onClick (StartSelection quadrant index)
-                                ]
-                            , [ HA.style "cursor" "pointer"
-                              , HE.onClick (EndSelection index)
-                              , HA.style "background-color" "rgb(0, 100, 255)"
-                              ]
-                            )
-
-                        Nothing ->
-                            ( [ if selectionState == NoneSelected then
-                                    HA.style "background-color" "rgb(0, 100, 255)"
-
-                                else
-                                    HA.style "background-color" "black"
-                              , HE.onClick (StartSelection quadrant index)
-                              ]
-                            , [ HA.style "background-color" "black" ]
-                            )
+                      else
+                        HA.style "background-color" "black"
+                    , HE.onClick (StartSelection quadrant index)
+                    ]
+            , [ HA.style "background-color" "black" ]
+            )
 
         rightStyles =
             [ HA.style "right" "0"
@@ -318,10 +279,5 @@ fromUrlString str =
 
 random : Int -> Random.Generator Permutation
 random numVars =
-    Random.list numVars (Random.int 0 (numVars - 1))
-
-
-randomPermutation : Int -> Random.Generator Permutation
-randomPermutation numVars =
     -- Version that produces a one to one permutation
     Random.List.shuffle (List.range 0 (numVars - 1))

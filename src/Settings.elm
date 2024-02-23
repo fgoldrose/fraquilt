@@ -14,7 +14,7 @@ import Permutation exposing (Permutation)
 import Random
 import Svg
 import Svg.Attributes as SvgAttr
-import Types exposing (Mode(..), Quadrant(..), SelectionState(..))
+import Types exposing (Quadrant(..), SelectionState(..))
 import UI exposing (sectionWithName, sliderWithLabel)
 
 
@@ -117,32 +117,8 @@ fromUrl appUrl =
         maybePermutations
 
 
-viewEditSettings : Mode -> SelectionState -> Settings -> Html Msg
-viewEditSettings currentMode selectionState settings =
-    let
-        modeToggleButton : Mode -> Html Msg
-        modeToggleButton modeButton =
-            Html.button
-                [ HA.style "border" "none"
-                , HA.style "outline" "none"
-                , HA.style "cursor" "pointer"
-                , if modeButton == currentMode then
-                    HA.style "background-color" "rgb(200, 200, 200)"
-
-                  else
-                    HA.class ""
-                , HE.onClick (ToggleMode modeButton)
-                ]
-                [ Html.text
-                    (case modeButton of
-                        Permutation ->
-                            "Permutation"
-
-                        Free ->
-                            "Free"
-                    )
-                ]
-    in
+viewEditSettings : SelectionState -> Settings -> Html Msg
+viewEditSettings selectionState settings =
     Html.div
         [ HA.style "height" "100%"
         , HA.style "max-height" "100vh"
@@ -171,7 +147,7 @@ viewEditSettings currentMode selectionState settings =
                 ]
                 [ Html.text "Configuration" ]
             , viewLevel settings.level
-            , viewPermutationGrid currentMode selectionState settings
+            , viewPermutationGrid selectionState settings
             , viewNumberOfVariables (Array.length settings.initialVariables)
             , Colors.view UpdateInitialVar settings.initialVariables
                 |> sectionWithName "Initial Colors"
@@ -230,8 +206,8 @@ viewNumberOfVariables numVars =
         |> sectionWithName "Number of colors"
 
 
-viewPermutationGrid : Mode -> SelectionState -> Settings -> Html Msg
-viewPermutationGrid mode selectionState settings =
+viewPermutationGrid : SelectionState -> Settings -> Html Msg
+viewPermutationGrid selectionState settings =
     [ Html.div
         [ HA.style "display" "grid"
         , HA.style "grid-template-columns" "100px 100px"
@@ -239,19 +215,15 @@ viewPermutationGrid mode selectionState settings =
         ]
         [ Permutation.view settings.tl
             TopLeft
-            mode
             selectionState
         , Permutation.view settings.tr
             TopRight
-            mode
             selectionState
         , Permutation.view settings.bl
             BottomLeft
-            mode
             selectionState
         , Permutation.view settings.br
             BottomRight
-            mode
             selectionState
         ]
     , Html.div
@@ -268,24 +240,6 @@ viewPermutationGrid mode selectionState settings =
         |> sectionWithName "Permutations"
 
 
-random : { initVars : InitialVariables, numVars : Int, level : Int } -> Random.Generator Settings
-random { initVars, numVars, level } =
-    Random.map4
-        (\tl tr bl br ->
-            { level = level
-            , initialVariables = initVars
-            , tl = tl
-            , tr = tr
-            , bl = bl
-            , br = br
-            }
-        )
-        (Permutation.random numVars)
-        (Permutation.random numVars)
-        (Permutation.random numVars)
-        (Permutation.random numVars)
-
-
 randomPermutations : { initVars : InitialVariables, numVars : Int, level : Int } -> Random.Generator Settings
 randomPermutations { initVars, numVars, level } =
     Random.map4
@@ -298,7 +252,7 @@ randomPermutations { initVars, numVars, level } =
             , br = br
             }
         )
-        (Permutation.randomPermutation numVars)
-        (Permutation.randomPermutation numVars)
-        (Permutation.randomPermutation numVars)
-        (Permutation.randomPermutation numVars)
+        (Permutation.random numVars)
+        (Permutation.random numVars)
+        (Permutation.random numVars)
+        (Permutation.random numVars)

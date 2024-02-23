@@ -4,18 +4,16 @@ import AppUrl
 import Array
 import Browser
 import Browser.Navigation as Nav
-import Dict
 import Html exposing (Html)
 import Html.Attributes as HA
 import Html.Events as HE
 import Info
-import Json.Decode as Decode
 import List.Extra
 import Messages exposing (Msg(..))
 import Permutation
 import Random
 import Settings exposing (Settings)
-import Types exposing (Mode(..), Quadrant(..), SelectionState(..))
+import Types exposing (Quadrant(..), SelectionState(..))
 import Url exposing (Url)
 
 
@@ -23,7 +21,6 @@ type alias Model =
     { settings : Settings
     , key : Nav.Key
     , randomSeed : Random.Seed
-    , mode : Mode
     , selectionState : SelectionState
     , showHelp : Bool
     }
@@ -32,17 +29,9 @@ type alias Model =
 randomizeModel : Model -> ( Model, Cmd msg )
 randomizeModel model =
     let
-        randomizeFunction =
-            case model.mode of
-                Permutation ->
-                    Settings.randomPermutations
-
-                Free ->
-                    Settings.random
-
         ( randomSettings, newSeed ) =
             Random.step
-                (randomizeFunction
+                (Settings.randomPermutations
                     { initVars = model.settings.initialVariables
                     , numVars = Array.length model.settings.initialVariables
                     , level = model.settings.level
@@ -217,35 +206,29 @@ update msg ({ settings } as model) =
 
         EndSelection endIndex ->
             let
-                modeFunction =
-                    case model.mode of
-                        Permutation ->
-                            \startIndex adjustments ->
-                                List.Extra.swapAt startIndex endIndex adjustments
-
-                        Free ->
-                            \startIndex adjustments -> adjustments |> Permutation.setNewLine startIndex endIndex
+                swapFunction startIndex adjustments =
+                    List.Extra.swapAt startIndex endIndex adjustments
 
                 newSettings =
                     case model.selectionState of
                         TLSelected startIndex ->
                             { settings
-                                | tl = modeFunction startIndex settings.tl
+                                | tl = swapFunction startIndex settings.tl
                             }
 
                         TRSelected startIndex ->
                             { settings
-                                | tr = modeFunction startIndex settings.tr
+                                | tr = swapFunction startIndex settings.tr
                             }
 
                         BLSelected startIndex ->
                             { settings
-                                | bl = modeFunction startIndex settings.bl
+                                | bl = swapFunction startIndex settings.bl
                             }
 
                         BRSelected startIndex ->
                             { settings
-                                | br = modeFunction startIndex settings.br
+                                | br = swapFunction startIndex settings.br
                             }
 
                         NoneSelected ->
@@ -257,15 +240,6 @@ update msg ({ settings } as model) =
               }
             , Settings.change model.key newSettings
             )
-
-        ToggleMode mode ->
-            case mode of
-                Permutation ->
-                    { model | mode = Permutation }
-                        |> randomizeModel
-
-                Free ->
-                    ( { model | mode = Free }, Cmd.none )
 
         ShowHelpInfo bool ->
             ( { model | showHelp = bool }, Cmd.none )
@@ -315,7 +289,7 @@ view model =
                 Info.helpView
 
               else
-                Settings.viewEditSettings model.mode model.selectionState model.settings
+                Settings.viewEditSettings model.selectionState model.settings
             ]
         ]
     }
@@ -350,7 +324,6 @@ init flags url key =
     ( { settings = settings
       , key = key
       , randomSeed = randomSeed
-      , mode = Permutation
       , selectionState = NoneSelected
       , showHelp = False
       }
