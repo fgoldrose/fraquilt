@@ -7,12 +7,11 @@ import Html.Events as HE
 import Json.Encode as Encode
 import List.Extra
 import Maybe.Extra
-import Messages exposing (Msg(..))
 import Random
 import Random.List
 import Svg exposing (Svg)
 import Svg.Attributes
-import Types exposing (Quadrant(..), SelectionState(..), getSelectedForQuadrant)
+import Types exposing (PermutationSelection(..))
 
 
 type alias Permutation =
@@ -22,6 +21,11 @@ type alias Permutation =
 getNumVars : Permutation -> Int
 getNumVars colorArray =
     List.length colorArray
+
+
+swap : Int -> Int -> Permutation -> Permutation
+swap =
+    List.Extra.swapAt
 
 
 setNewLine : Int -> Int -> Permutation -> Permutation
@@ -64,8 +68,16 @@ removeN n permutation =
             )
 
 
-view : Permutation -> Quadrant -> SelectionState -> Html Msg
-view permutation quadrant selectionState =
+type alias Config msg =
+    { permutationSelection : PermutationSelection
+    , startSelection : Int -> msg
+    , endSelection : Int -> msg
+    , cancelSelection : msg
+    }
+
+
+view : Config msg -> Permutation -> Html msg
+view config permutation =
     let
         numVars =
             getNumVars permutation
@@ -91,8 +103,7 @@ view permutation quadrant selectionState =
                     (dot
                         { side = Left
                         , totalVars = numVars
-                        , quadrant = quadrant
-                        , selectionState = selectionState
+                        , config = config
                         }
                     )
                     listRange
@@ -100,8 +111,7 @@ view permutation quadrant selectionState =
                     (dot
                         { side = Right
                         , totalVars = numVars
-                        , quadrant = quadrant
-                        , selectionState = selectionState
+                        , config = config
                         }
                     )
                     listRange
@@ -126,37 +136,37 @@ type Side
 dot :
     { side : Side
     , totalVars : Int
-    , quadrant : Quadrant
-    , selectionState : SelectionState
+    , config : Config msg
     }
     -> Int
-    -> Html Msg
-dot { side, totalVars, quadrant, selectionState } index =
+    -> Html msg
+dot { side, totalVars, config } index =
     let
-        maybeSelectedIndex =
-            getSelectedForQuadrant quadrant selectionState
+        { permutationSelection, startSelection, endSelection, cancelSelection } =
+            config
 
         ( rightModeStyles, leftModeStyles ) =
-            ( case maybeSelectedIndex of
-                Just selectedIndex ->
+            ( case permutationSelection of
+                Selected selectedIndex ->
                     if selectedIndex == index then
                         [ HA.style "background-color" "rgb(0, 0, 255)"
                         , HA.style "outline" "2px solid rgba(0, 100, 255, 0.5)"
-                        , HE.onClick CancelSelection
+                        , HE.onClick cancelSelection
                         ]
 
                     else
                         [ HA.style "background-color" "rgb(0, 100, 255)"
-                        , HE.onClick (EndSelection index)
+                        , HE.onClick (endSelection index)
                         ]
 
-                Nothing ->
-                    [ if selectionState == NoneSelected then
-                        HA.style "background-color" "rgb(0, 100, 255)"
+                PromptSelection ->
+                    [ HA.style "background-color" "rgb(0, 100, 255)"
+                    , HE.onClick (startSelection index)
+                    ]
 
-                      else
-                        HA.style "background-color" "black"
-                    , HE.onClick (StartSelection quadrant index)
+                DontPromptSelection ->
+                    [ HA.style "background-color" "black"
+                    , HE.onClick (startSelection index)
                     ]
             , [ HA.style "background-color" "black" ]
             )

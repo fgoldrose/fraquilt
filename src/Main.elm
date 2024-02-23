@@ -4,11 +4,10 @@ import AppUrl
 import Array
 import Browser
 import Browser.Navigation as Nav
-import Html exposing (Html)
+import Html
 import Html.Attributes as HA
 import Html.Events as HE
 import Info
-import List.Extra
 import Messages exposing (Msg(..))
 import Permutation
 import Random
@@ -24,27 +23,6 @@ type alias Model =
     , selectionState : SelectionState
     , showHelp : Bool
     }
-
-
-randomizeModel : Model -> ( Model, Cmd msg )
-randomizeModel model =
-    let
-        ( randomSettings, newSeed ) =
-            Random.step
-                (Settings.randomPermutations
-                    { initVars = model.settings.initialVariables
-                    , numVars = Array.length model.settings.initialVariables
-                    , level = model.settings.level
-                    }
-                )
-                model.randomSeed
-    in
-    ( { model
-        | settings = randomSettings
-        , randomSeed = newSeed
-      }
-    , Settings.change model.key randomSettings
-    )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -80,7 +58,23 @@ update msg ({ settings } as model) =
                     )
 
         Randomize ->
-            randomizeModel model
+            let
+                ( randomSettings, newSeed ) =
+                    Random.step
+                        (Settings.randomPermutations
+                            { initVars = model.settings.initialVariables
+                            , numVars = Array.length model.settings.initialVariables
+                            , level = model.settings.level
+                            }
+                        )
+                        model.randomSeed
+            in
+            ( { model
+                | settings = randomSettings
+                , randomSeed = newSeed
+              }
+            , Settings.change model.key randomSettings
+            )
 
         ClearPermutations ->
             let
@@ -206,8 +200,8 @@ update msg ({ settings } as model) =
 
         EndSelection endIndex ->
             let
-                swapFunction startIndex adjustments =
-                    List.Extra.swapAt startIndex endIndex adjustments
+                swapFunction startIndex permutation =
+                    Permutation.swap startIndex endIndex permutation
 
                 newSettings =
                     case model.selectionState of

@@ -16,20 +16,29 @@ type SelectionState
     | BRSelected Int
 
 
-getSelectedForQuadrant : Quadrant -> SelectionState -> Maybe Int
+type PermutationSelection
+    = DontPromptSelection
+    | PromptSelection
+    | Selected Int
+
+
+getSelectedForQuadrant : Quadrant -> SelectionState -> PermutationSelection
 getSelectedForQuadrant quadrant selectionState =
     case ( quadrant, selectionState ) of
         ( TopLeft, TLSelected x ) ->
-            Just x
+            Selected x
 
         ( TopRight, TRSelected x ) ->
-            Just x
+            Selected x
 
         ( BottomLeft, BLSelected x ) ->
-            Just x
+            Selected x
 
         ( BottomRight, BRSelected x ) ->
-            Just x
+            Selected x
+
+        ( _, NoneSelected ) ->
+            PromptSelection
 
         _ ->
-            Nothing
+            DontPromptSelection

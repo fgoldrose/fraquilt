@@ -208,23 +208,23 @@ viewNumberOfVariables numVars =
 
 viewPermutationGrid : SelectionState -> Settings -> Html Msg
 viewPermutationGrid selectionState settings =
+    let
+        permutationConfig quadrant =
+            { permutationSelection = Types.getSelectedForQuadrant quadrant selectionState
+            , startSelection = StartSelection quadrant
+            , endSelection = EndSelection
+            , cancelSelection = CancelSelection
+            }
+    in
     [ Html.div
         [ HA.style "display" "grid"
         , HA.style "grid-template-columns" "100px 100px"
         , HA.style "grid-gap" "30px"
         ]
-        [ Permutation.view settings.tl
-            TopLeft
-            selectionState
-        , Permutation.view settings.tr
-            TopRight
-            selectionState
-        , Permutation.view settings.bl
-            BottomLeft
-            selectionState
-        , Permutation.view settings.br
-            BottomRight
-            selectionState
+        [ Permutation.view (permutationConfig TopLeft) settings.tl
+        , Permutation.view (permutationConfig TopRight) settings.tr
+        , Permutation.view (permutationConfig BottomLeft) settings.bl
+        , Permutation.view (permutationConfig BottomRight) settings.br
         ]
     , Html.div
         [ HA.style "display" "flex"
