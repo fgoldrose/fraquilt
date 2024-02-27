@@ -144,7 +144,7 @@ viewEditSettings selectionState settings =
 
 helpIcon : Html Msg
 helpIcon =
-    Html.a [ HA.href "/fraquilt/tutorial" ]
+    Html.a [ HA.href "/fraquilt/tutorial/1" ]
         [ FeatherIcons.helpCircle
             |> FeatherIcons.withSize 30
             |> FeatherIcons.toHtml [ SvgAttr.color "black" ]

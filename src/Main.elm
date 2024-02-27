@@ -2,6 +2,7 @@ module Main exposing (..)
 
 import AppUrl
 import Browser
+import Browser.Dom
 import Browser.Navigation as Nav
 import Colors
 import Html
@@ -13,6 +14,7 @@ import Permutation
 import PermutationGrid
 import Random
 import Settings exposing (Settings)
+import Task
 import Tutorial
 import Types exposing (Quadrant(..), SelectionState(..))
 import Url exposing (Url)
@@ -40,14 +42,9 @@ update msg ({ settings } as model) =
                     AppUrl.fromUrl url
             in
             case appUrl.path of
-                [ "fraquilt", "tutorial" ] ->
-                    ( { model | tutorial = Just Tutorial.Intro }
-                    , Cmd.none
-                    )
-
                 [ "fraquilt", "tutorial", pageNumber ] ->
-                    ( { model | tutorial = Just (Tutorial.initPage pageNumber) }
-                    , Cmd.none
+                    ( { model | tutorial = Tutorial.initPage pageNumber }
+                    , Task.attempt (\_ -> NoOp) (Browser.Dom.setViewportOf "page" 0 0)
                     )
 
                 _ ->
@@ -349,13 +346,8 @@ init flags url key =
             }
     in
     case appUrl.path of
-        [ "fraquilt", "tutorial" ] ->
-            ( { model | tutorial = Just Tutorial.Intro }
-            , Cmd.none
-            )
-
         [ "fraquilt", "tutorial", pageNumber ] ->
-            ( { model | tutorial = Just (Tutorial.initPage pageNumber) }
+            ( { model | tutorial = Tutorial.initPage pageNumber }
             , Cmd.none
             )
 
