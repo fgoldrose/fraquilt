@@ -5,6 +5,7 @@ import Colors exposing (InitialVariables)
 import FeatherIcons
 import Html exposing (Html)
 import Html.Attributes as HA
+import Html.Events as HE
 import Permutation exposing (Permutation)
 import PermutationGrid exposing (PermutationGrid)
 import Svg
@@ -53,6 +54,7 @@ initPage page =
                         }
                     , selectionState = NoneSelected
                     , hasChangedPermutation = False
+                    , showProcess = True
                     }
                 )
 
@@ -68,6 +70,7 @@ initPage page =
                         }
                     , selectionState = NoneSelected
                     , hasChangedPermutation = False
+                    , showProcess = True
                     }
                 )
 
@@ -113,7 +116,7 @@ view page =
                         , HA.style "padding" "20px"
                         ]
                         [ description "You have now seen how we will generate an image from an initial list of colors and 4 permutations."
-                        , description "In this tutorial, the number of colors was always 3, and we only showed 2 levels of recursion."
+                        , description "In this tutorial, the number of colors was always 3, and we only showed up to 2 levels of recursion."
                         , description "In the actual application, you can change the number of colors and the level of recursion."
                         , button
                             { href = "/fraquilt/"
@@ -349,6 +352,7 @@ type alias Page3State =
     , permutations : PermutationGrid
     , selectionState : SelectionState
     , hasChangedPermutation : Bool
+    , showProcess : Bool
     }
 
 
@@ -360,6 +364,8 @@ permutationGridInputOutput colors permutations permutationsView =
         , HA.style "align-items" "center"
         , HA.style "gap" "20px"
         , HA.style "max-width" "100%"
+        , HA.style "flex-wrap" "wrap"
+        , HA.style "justify-content" "center"
         ]
         [ Colors.view ChangeInitialColor colors
         , rightArrow
@@ -384,8 +390,8 @@ transform scale item =
         [ item ]
 
 
-level2Grid : InitialVariables -> PermutationGrid -> Html msg
-level2Grid colors permutations =
+level2Grid : Int -> InitialVariables -> PermutationGrid -> Html msg
+level2Grid size colors permutations =
     let
         tlOutput =
             permute colors permutations.tl
@@ -398,6 +404,9 @@ level2Grid colors permutations =
 
         brOutput =
             permute colors permutations.br
+
+        smallerSize =
+            size // 2
     in
     grid
         { tl =
@@ -407,7 +416,7 @@ level2Grid colors permutations =
                 , bl = Colors.readOnlyView (permute tlOutput permutations.bl)
                 , br = Colors.readOnlyView (permute tlOutput permutations.br)
                 }
-                100
+                smallerSize
         , tr =
             grid
                 { tl = Colors.readOnlyView (permute trOutput permutations.tl)
@@ -415,7 +424,7 @@ level2Grid colors permutations =
                 , bl = Colors.readOnlyView (permute trOutput permutations.bl)
                 , br = Colors.readOnlyView (permute trOutput permutations.br)
                 }
-                100
+                smallerSize
         , bl =
             grid
                 { tl = Colors.readOnlyView (permute blOutput permutations.tl)
@@ -423,7 +432,7 @@ level2Grid colors permutations =
                 , bl = Colors.readOnlyView (permute blOutput permutations.bl)
                 , br = Colors.readOnlyView (permute blOutput permutations.br)
                 }
-                100
+                smallerSize
         , br =
             grid
                 { tl = Colors.readOnlyView (permute brOutput permutations.tl)
@@ -431,13 +440,13 @@ level2Grid colors permutations =
                 , bl = Colors.readOnlyView (permute brOutput permutations.bl)
                 , br = Colors.readOnlyView (permute brOutput permutations.br)
                 }
-                100
+                smallerSize
         }
-        200
+        size
 
 
 page3 : Page3State -> Html Msg
-page3 { colors, permutations, selectionState, hasChangedPermutation } =
+page3 { colors, permutations, selectionState, hasChangedPermutation, showProcess } =
     let
         subGridView c =
             Html.div
@@ -483,22 +492,38 @@ page3 { colors, permutations, selectionState, hasChangedPermutation } =
 
         nextLevel =
             [ descriptionLines
-                [ "The above transformation is level 1."
-                , "For the next level, we will apply the same process again in each quadrant."
-                , "The output list from the previous level becomes the input list for the next level."
+                [ "We then repeat this process in each quadrant."
+                , "The output list in each quadrant becomes the input list for the next level."
                 ]
-            , grid
-                { tl = subGridView (permute colors permutations.tl)
-                , tr = subGridView (permute colors permutations.tr)
-                , bl = subGridView (permute colors permutations.bl)
-                , br = subGridView (permute colors permutations.br)
-                }
-                300
-            , descriptionLines
-                [ "We have divided the image into quadrants, and then divided each quadrant again."
-                , "After 2 levels, we end up with these output color lists:"
+            , if showProcess then
+                grid
+                    { tl = subGridView (permute colors permutations.tl)
+                    , tr = subGridView (permute colors permutations.tr)
+                    , bl = subGridView (permute colors permutations.bl)
+                    , br = subGridView (permute colors permutations.br)
+                    }
+                    300
+
+              else
+                level2Grid 300 colors permutations
+            , Html.button
+                [ HE.onClick (ToggleShowProcess (not showProcess))
+                , HA.style "padding" "10px"
+                , HA.style "text-align" "center"
+                , HA.style "border-radius" "5px"
+                , HA.style "color" "black"
+                , HA.style "font-weight" "bold"
+                , HA.style "text-decoration" "none"
+                , HA.style "cursor" "pointer"
                 ]
-            , level2Grid colors permutations
+                [ if showProcess then
+                    Html.text "Show output"
+
+                  else
+                    Html.text "Show process"
+                ]
+            , description
+                "For each additional level of recursion, we will apply the permutations again to each output from the previous level, subdividing each square into 4 smaller quadrants."
             , nextButton "/fraquilt/tutorial/4"
             ]
     in
@@ -510,7 +535,7 @@ page3 { colors, permutations, selectionState, hasChangedPermutation } =
         , HA.style "padding" "20px"
         ]
         ([ description "We will have 4 permutations, one for each quadrant."
-         , description "For a given input list, we end up with an output list for each quadrant."
+         , description "After applying these permutations to the input list of colors, we end up with an output list for each quadrant."
          , permutationGridInputOutput colors
             permutations
             (PermutationGrid.view
@@ -533,12 +558,6 @@ page3 { colors, permutations, selectionState, hasChangedPermutation } =
 page4 : Page3State -> Html Msg
 page4 { colors, permutations, selectionState } =
     let
-        downArrow =
-            FeatherIcons.arrowDown
-                |> FeatherIcons.withSize 50
-                |> FeatherIcons.toHtml
-                    []
-
         outputImage =
             let
                 tlOutput =
@@ -614,13 +633,14 @@ page4 { colors, permutations, selectionState } =
         , HA.style "gap" "20px"
         , HA.style "padding" "20px"
         ]
-        [ description "We can continue to apply the permutations recursively for however many levels we want."
-        , description "But eventually, we want to transform the all these lists of colors into an image."
+        [ description "We can continue to apply the permutations recursively, and we end up with a grid of color lists."
         , Html.div
             [ HA.style "display" "flex"
             , HA.style "flex-direction" "row"
             , HA.style "align-items" "center"
             , HA.style "gap" "20px"
+            , HA.style "flex-wrap" "wrap"
+            , HA.style "justify-content" "center"
             ]
             [ Colors.view ChangeInitialColor colors
             , rightArrow
@@ -631,25 +651,47 @@ page4 { colors, permutations, selectionState } =
                 , cancelSelection = CancelSelection
                 }
                 permutations
+            , Html.div
+                [ HA.style "display" "flex"
+                , HA.style "flex-direction" "column"
+                , HA.style "align-items" "center"
+                ]
+                [ Html.text "1 level", rightArrow ]
+            , grid
+                { tl = Colors.readOnlyView (permute colors permutations.tl)
+                , tr = Colors.readOnlyView (permute colors permutations.tr)
+                , bl = Colors.readOnlyView (permute colors permutations.bl)
+                , br = Colors.readOnlyView (permute colors permutations.br)
+                }
+                100
+            , Html.div
+                [ HA.style "display" "flex"
+                , HA.style "flex-direction" "column"
+                , HA.style "align-items" "center"
+                , HA.style "justify-content" "center"
+                ]
+                [ Html.text "2 levels", rightArrow ]
+            , Html.div
+                [ HA.style "transform" "scale(0.5) translate(-50%, -50%)"
+                , HA.style "width" "200px"
+                , HA.style "height" "200px"
+                ]
+                [ level2Grid 200 colors permutations ]
             ]
-        , Html.div
-            [ HA.style "display" "flex"
-            , HA.style "flex-direction" "column"
-            , HA.style "align-items" "center"
-            ]
-            [ Html.text "2 levels", downArrow ]
+        , description "But after some number of levels, we will want to transform the grid of color lists into an image."
+        , description "We use the first color from a list as the value for that location in the image."
         , Html.div
             [ HA.style "display" "flex"
             , HA.style "flex-direction" "row"
             , HA.style "align-items" "center"
             , HA.style "gap" "20px"
             , HA.style "flex-wrap" "wrap"
+            , HA.style "justify-content" "center"
             ]
-            [ level2Grid colors permutations
+            [ level2Grid 200 colors permutations
             , rightArrow
             , outputImage
             ]
-        , description "We use the first color from a list as the value for that location in the image."
         , description "Try changing the initial colors and permutations to see how the output changes"
         , nextButton "/fraquilt/tutorial/end"
         ]
@@ -666,6 +708,7 @@ type Msg
     | StartSelectionQuadrant Quadrant Int
     | EndSelection Int
     | CancelSelection
+    | ToggleShowProcess Bool
 
 
 update : Msg -> Page -> ( Page, Cmd Msg )
@@ -823,6 +866,19 @@ update msg page =
                     ( Page4
                         { state
                             | selectionState = NoneSelected
+                        }
+                    , Cmd.none
+                    )
+
+                _ ->
+                    ( page, Cmd.none )
+
+        ToggleShowProcess showProcess ->
+            case page of
+                Page3 state ->
+                    ( Page3
+                        { state
+                            | showProcess = showProcess
                         }
                     , Cmd.none
                     )
