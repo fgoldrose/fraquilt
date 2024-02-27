@@ -30,7 +30,7 @@ function generateImage(permutations: Permutations, level: number, initialVariabl
     const canvas = <HTMLCanvasElement | null>document.getElementById("canvas");
     if (!canvas) {
         // If the canvas isn't in the dom yet, try again in 100ms
-        if (tries < 5) {
+        if (tries < 10) {
             setTimeout(() => generateImage(permutations, level, initialVariables, tries + 1), 100);
         }
     }
