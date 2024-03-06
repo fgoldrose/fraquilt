@@ -10,7 +10,7 @@ type Msg
     = NoOp
     | OnUrlChange Url
     | OnUrlRequest Browser.UrlRequest
-    | Randomize
+    | Randomize { symmetric : Bool }
     | ClearPermutations
     | UpdateInitialVar Int String
     | ChangeLevel String

@@ -68,6 +68,20 @@ random numVars =
         (Permutation.random numVars)
 
 
+randomSymmetric : Int -> Random.Generator PermutationGrid
+randomSymmetric numVars =
+    Random.map2
+        (\permutation1 permutation2 ->
+            { tl = permutation1
+            , tr = permutation2
+            , bl = permutation2
+            , br = permutation1
+            }
+        )
+        (Permutation.random numVars)
+        (Permutation.random numVars)
+
+
 encode : PermutationGrid -> Encode.Value
 encode settings =
     Encode.object

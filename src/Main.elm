@@ -80,11 +80,18 @@ update msg ({ settings } as model) =
                     , Nav.load url
                     )
 
-        Randomize ->
+        Randomize { symmetric } ->
             let
+                randomFunction =
+                    if symmetric then
+                        PermutationGrid.randomSymmetric
+
+                    else
+                        PermutationGrid.random
+
                 ( randomPermutations, newSeed ) =
                     Random.step
-                        (PermutationGrid.random (Colors.count model.settings.initialVariables))
+                        (randomFunction (Colors.count model.settings.initialVariables))
                         model.randomSeed
 
                 updatedSettings =
@@ -291,7 +298,7 @@ view model =
                                 , HA.style "height" "100%"
                                 , HA.style "image-rendering" "pixelated"
                                 , HA.style "border" "2px solid black"
-                                , HE.onClick Randomize
+                                , HE.onClick (Randomize { symmetric = True })
                                 ]
                                 []
                             ]
@@ -326,7 +333,7 @@ init flags url key =
                     let
                         ( permutations, seed ) =
                             Random.step
-                                (PermutationGrid.random 3)
+                                (PermutationGrid.randomSymmetric 3)
                                 (Random.initialSeed flags.randomSeed)
                     in
                     ( { level = 9

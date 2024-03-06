@@ -198,7 +198,8 @@ viewPermutationGrid selectionState settings =
         , HA.style "justify-items" "center"
         , HA.style "margin" "5px"
         ]
-        [ Html.button [ HE.onClick Randomize ] [ Html.text "Random" ]
+        [ Html.button [ HE.onClick <| Randomize { symmetric = False } ] [ Html.text "Random" ]
+        , Html.button [ HE.onClick <| Randomize { symmetric = True } ] [ Html.text "Random Symmetric" ]
         , Html.button [ HE.onClick ClearPermutations ] [ Html.text "Clear" ]
         ]
     ]

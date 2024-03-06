@@ -118,6 +118,8 @@ view page =
                         [ description "You have now seen how we will generate an image from an initial list of colors and 4 permutations."
                         , description "In this tutorial, the number of colors was always 3, and we only showed up to 2 levels of recursion."
                         , description "In the actual application, you can change the number of colors and the level of recursion."
+                        , description "You will also be able to randomize the permutations. There is a 'Random' button that will generate all 4 permutations randomly, and a 'Random Symmetric' button that will generate 2 random permutation and have equal diagonal permutations (because symmetry is pretty)."
+                        , description "Clicking on the image does the same thing as clicking the 'Random Symmetric' button."
                         , button
                             { href = "/fraquilt/"
                             , text = "Done"
