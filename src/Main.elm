@@ -13,6 +13,7 @@ import Messages exposing (Msg(..))
 import Permutation
 import PermutationGrid
 import Random
+import Routing
 import Settings exposing (Settings)
 import Task
 import Tutorial
@@ -37,36 +38,30 @@ update msg ({ settings } as model) =
             ( model, Cmd.none )
 
         OnUrlChange url ->
-            let
-                appUrl =
-                    AppUrl.fromUrl url
-            in
-            case appUrl.path of
-                [ "fraquilt", "tutorial", pageNumber ] ->
-                    ( { model | tutorial = Tutorial.initPage pageNumber }
+            case Routing.parseUrl url of
+                Routing.Tutorial tutorialRoute ->
+                    ( { model | tutorial = Just (Tutorial.initPage tutorialRoute) }
                     , Task.attempt (\_ -> NoOp) (Browser.Dom.setViewportOf "page" 0 0)
                     )
 
-                _ ->
-                    case Settings.fromUrl (AppUrl.fromUrl url) of
-                        Nothing ->
-                            ( { model | tutorial = Nothing }
-                            , Settings.change model.key settings
-                            )
+                Routing.App Nothing ->
+                    ( { model | tutorial = Nothing }
+                    , Settings.change model.key settings
+                    )
 
-                        Just urlSettings ->
-                            if urlSettings == settings then
-                                ( { model | tutorial = Nothing }
-                                , Cmd.none
-                                )
+                Routing.App (Just urlSettings) ->
+                    if urlSettings == settings then
+                        ( { model | tutorial = Nothing }
+                        , Cmd.none
+                        )
 
-                            else
-                                ( { model
-                                    | tutorial = Nothing
-                                    , settings = urlSettings
-                                  }
-                                , Settings.render urlSettings
-                                )
+                    else
+                        ( { model
+                            | tutorial = Nothing
+                            , settings = urlSettings
+                          }
+                        , Settings.render urlSettings
+                        )
 
         OnUrlRequest urlRequest ->
             case urlRequest of
@@ -323,45 +318,53 @@ init flags url key =
         appUrl =
             AppUrl.fromUrl url
 
-        -- Todo: handle decode error
-        ( settings, randomSeed ) =
-            case Settings.fromUrl appUrl of
-                Just urlSettings ->
-                    ( urlSettings, Random.initialSeed flags.randomSeed )
+        makeModel : Maybe Settings -> Maybe Tutorial.Page -> Model
+        makeModel maybeSettings tutorial =
+            let
+                { settings, randomSeed } =
+                    case maybeSettings of
+                        Nothing ->
+                            let
+                                ( permutations, seed ) =
+                                    Random.step
+                                        (PermutationGrid.randomSymmetric 3)
+                                        (Random.initialSeed flags.randomSeed)
+                            in
+                            { settings =
+                                { level = 9
+                                , initialVariables = Colors.init3
+                                , permutations = permutations
+                                }
+                            , randomSeed = seed
+                            }
 
-                Nothing ->
-                    let
-                        ( permutations, seed ) =
-                            Random.step
-                                (PermutationGrid.randomSymmetric 3)
-                                (Random.initialSeed flags.randomSeed)
-                    in
-                    ( { level = 9
-                      , initialVariables = Colors.init3
-                      , permutations = permutations
-                      }
-                    , seed
-                    )
-
-        model =
+                        Just s ->
+                            { settings = s
+                            , randomSeed = Random.initialSeed flags.randomSeed
+                            }
+            in
             { settings = settings
             , key = key
             , randomSeed = randomSeed
             , selectionState = NoneSelected
             , showHelp = False
-            , tutorial = Nothing
+            , tutorial = tutorial
             }
+
+        -- Todo: handle decode error
     in
-    case appUrl.path of
-        [ "fraquilt", "tutorial", pageNumber ] ->
-            ( { model | tutorial = Tutorial.initPage pageNumber }
+    case Routing.parseUrl url of
+        Routing.Tutorial tutorialRoute ->
+            ( makeModel Nothing (Just (Tutorial.initPage tutorialRoute))
             , Cmd.none
             )
 
-        _ ->
-            ( model
-            , Settings.change key settings
-            )
+        Routing.App maybeSettings ->
+            let
+                model =
+                    makeModel maybeSettings Nothing
+            in
+            ( model, Settings.change key model.settings )
 
 
 subscriptions : Model -> Sub Msg

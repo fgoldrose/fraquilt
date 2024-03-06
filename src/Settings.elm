@@ -13,6 +13,7 @@ import Messages exposing (Msg(..))
 import Permutation exposing (Permutation)
 import PermutationGrid exposing (PermutationGrid)
 import Random
+import Routing
 import Svg.Attributes as SvgAttr
 import Types exposing (Quadrant(..), SelectionState(..))
 import UI exposing (sectionWithName, sliderWithLabel)
@@ -41,67 +42,13 @@ change : Nav.Key -> Settings -> Cmd msg
 change key settings =
     Cmd.batch
         [ render settings
-        , setUrl key settings
+        , Nav.pushUrl key (Routing.reverse (Routing.App (Just settings)))
         ]
 
 
 render : Settings -> Cmd msg
 render settings =
     renderImage (settingsEncoder settings)
-
-
-setUrl : Nav.Key -> Settings -> Cmd msg
-setUrl key settings =
-    let
-        queryParameters =
-            Dict.fromList
-                [ ( "level", [ String.fromInt settings.level ] )
-                , ( "colors", [ Colors.toUrlString settings.initialVariables ] )
-                , ( "tl", [ Permutation.toUrlString settings.permutations.tl ] )
-                , ( "tr", [ Permutation.toUrlString settings.permutations.tr ] )
-                , ( "bl", [ Permutation.toUrlString settings.permutations.bl ] )
-                , ( "br", [ Permutation.toUrlString settings.permutations.br ] )
-                , ( "v", [ "0" ] ) -- so I can potentially change the url format in the future
-                ]
-
-        appUrl =
-            { path = [ "fraquilt", "" ]
-            , fragment = Nothing
-            , queryParameters = queryParameters
-            }
-    in
-    Nav.pushUrl key (AppUrl.toString appUrl)
-
-
-fromUrl : AppUrl -> Maybe Settings
-fromUrl appUrl =
-    let
-        getPermutation : String -> Maybe Permutation
-        getPermutation key =
-            Dict.get key appUrl.queryParameters
-                |> Maybe.andThen List.head
-                |> Maybe.andThen Permutation.fromUrlString
-
-        maybePermutations =
-            Maybe.map4 (\tl tr bl br -> { tl = tl, tr = tr, bl = bl, br = br })
-                (getPermutation "tl")
-                (getPermutation "tr")
-                (getPermutation "bl")
-                (getPermutation "br")
-    in
-    Maybe.map3
-        (\level colors permutations ->
-            { level = level
-            , initialVariables = colors
-            , permutations = permutations
-            }
-        )
-        (Dict.get "level" appUrl.queryParameters |> Maybe.andThen List.head |> Maybe.andThen String.toInt)
-        (Dict.get "colors" appUrl.queryParameters
-            |> Maybe.andThen List.head
-            |> Maybe.map Colors.fromUrlString
-        )
-        maybePermutations
 
 
 viewEditSettings : SelectionState -> Settings -> Html Msg
@@ -144,7 +91,7 @@ viewEditSettings selectionState settings =
 
 helpIcon : Html Msg
 helpIcon =
-    Html.a [ HA.href "/fraquilt/tutorial/1" ]
+    Html.a [ HA.href (Routing.reverse <| Routing.Tutorial Routing.Tutorial1) ]
         [ FeatherIcons.helpCircle
             |> FeatherIcons.withSize 30
             |> FeatherIcons.toHtml [ SvgAttr.color "black" ]

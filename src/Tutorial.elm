@@ -8,7 +8,7 @@ import Html.Attributes as HA
 import Html.Events as HE
 import Permutation exposing (Permutation)
 import PermutationGrid exposing (PermutationGrid)
-import Svg
+import Routing exposing (TutorialRoute(..))
 import Svg.Attributes as SvgAttr
 import Types exposing (PermutationSelection(..), Quadrant(..), SelectionState(..))
 
@@ -21,69 +21,58 @@ type Page
     | EndPage
 
 
-initPage : String -> Maybe Page
+initPage : Routing.TutorialRoute -> Page
 initPage page =
     case page of
-        "1" ->
-            Just
-                (Page1
-                    { colors = Colors.init3
-                    , hasSelectedColor = False
+        Tutorial1 ->
+            Page1
+                { colors = Colors.init3
+                , hasSelectedColor = False
+                }
+
+        Tutorial2 ->
+            Page2
+                { colors = Colors.init3
+                , permutation = [ 1, 2, 0 ]
+                , selectedIndex = Nothing
+                , hasChangedPermutation = False
+                }
+
+        Tutorial3 ->
+            Page3
+                { colors = Colors.init3
+                , permutations =
+                    { tl = [ 0, 1, 2 ]
+                    , tr = [ 2, 0, 1 ]
+                    , bl = [ 2, 1, 0 ]
+                    , br = [ 1, 0, 2 ]
                     }
-                )
+                , selectionState = NoneSelected
+                , hasChangedPermutation = False
+                , showProcess = True
+                }
 
-        "2" ->
-            Just
-                (Page2
-                    { colors = Colors.init3
-                    , permutation = [ 1, 2, 0 ]
-                    , selectedIndex = Nothing
-                    , hasChangedPermutation = False
+        Tutorial4 ->
+            Page4
+                { colors = Colors.init3
+                , permutations =
+                    { tl = [ 0, 1, 2 ]
+                    , tr = [ 2, 0, 1 ]
+                    , bl = [ 2, 1, 0 ]
+                    , br = [ 1, 0, 2 ]
                     }
-                )
+                , selectionState = NoneSelected
+                , hasChangedPermutation = False
+                , showProcess = True
+                }
 
-        "3" ->
-            Just
-                (Page3
-                    { colors = Colors.init3
-                    , permutations =
-                        { tl = [ 0, 1, 2 ]
-                        , tr = [ 2, 0, 1 ]
-                        , bl = [ 2, 1, 0 ]
-                        , br = [ 1, 0, 2 ]
-                        }
-                    , selectionState = NoneSelected
-                    , hasChangedPermutation = False
-                    , showProcess = True
-                    }
-                )
-
-        "4" ->
-            Just
-                (Page4
-                    { colors = Colors.init3
-                    , permutations =
-                        { tl = [ 0, 1, 2 ]
-                        , tr = [ 2, 0, 1 ]
-                        , bl = [ 2, 1, 0 ]
-                        , br = [ 1, 0, 2 ]
-                        }
-                    , selectionState = NoneSelected
-                    , hasChangedPermutation = False
-                    , showProcess = True
-                    }
-                )
-
-        "end" ->
-            Just EndPage
-
-        _ ->
-            Nothing
+        TutorialEnd ->
+            EndPage
 
 
 xIcon : Html msg
 xIcon =
-    Html.a [ HA.href "/fraquilt/" ]
+    Html.a [ HA.href (Routing.reverse (Routing.App Nothing)) ]
         [ FeatherIcons.xCircle
             |> FeatherIcons.withSize 30
             |> FeatherIcons.toHtml [ SvgAttr.color "black" ]
@@ -121,7 +110,7 @@ view page =
                         , description "You will also be able to randomize the permutations. There is a 'Random' button that will generate all 4 permutations randomly, and a 'Random Symmetric' button that will generate 2 random permutation and have equal diagonal permutations (because symmetry is pretty)."
                         , description "Clicking on the image does the same thing as clicking the 'Random Symmetric' button."
                         , button
-                            { href = "/fraquilt/"
+                            { route = Routing.App Nothing
                             , text = "Done"
                             }
                         ]
@@ -178,10 +167,10 @@ descriptionLines lines =
         (List.map description lines)
 
 
-button : { href : String, text : String } -> Html Msg
-button { href, text } =
+button : { route : Routing.Route, text : String } -> Html Msg
+button { route, text } =
     Html.a
-        [ HA.href href
+        [ HA.href (Routing.reverse route)
         , HA.style "background" "green"
         , HA.style "padding" "10px"
         , HA.style "text-align" "center"
@@ -194,9 +183,9 @@ button { href, text } =
         [ Html.text text ]
 
 
-nextButton : String -> Html Msg
-nextButton href =
-    button { href = href, text = "Next" }
+nextButton : Routing.TutorialRoute -> Html Msg
+nextButton tutorialRoute =
+    button { route = Routing.Tutorial tutorialRoute, text = "Next" }
 
 
 
@@ -220,7 +209,7 @@ page1 { colors, hasSelectedColor } =
         , Colors.view ChangeInitialColor colors
         , description "Try changing the value of a color"
         , if hasSelectedColor then
-            nextButton "/fraquilt/tutorial/2"
+            nextButton Routing.Tutorial2
 
           else
             Html.text ""
@@ -301,7 +290,7 @@ page2 { colors, permutation, selectedIndex, hasChangedPermutation } =
          ]
             ++ (if hasChangedPermutation then
                     [ description "See how the output changes depending on the permutation"
-                    , nextButton "/fraquilt/tutorial/3"
+                    , nextButton Routing.Tutorial3
                     ]
 
                 else
@@ -526,7 +515,7 @@ page3 { colors, permutations, selectionState, hasChangedPermutation, showProcess
                 ]
             , description
                 "For each additional level of recursion, we will apply the permutations again to each output from the previous level, subdividing each square into 4 smaller quadrants."
-            , nextButton "/fraquilt/tutorial/4"
+            , nextButton Routing.Tutorial4
             ]
     in
     Html.div
@@ -695,7 +684,7 @@ page4 { colors, permutations, selectionState } =
             , outputImage
             ]
         , description "Try changing the initial colors and permutations to see how the output changes"
-        , nextButton "/fraquilt/tutorial/end"
+        , nextButton Routing.TutorialEnd
         ]
 
 
