@@ -14,7 +14,10 @@ type Coords = { x: number, y: number };
 const app = Elm.Main.init({
     flags: {
         randomSeed: new Date().getMilliseconds(),
-        windowWidth: window.innerWidth
+        window: {
+            width: window.innerWidth,
+            height: window.innerHeight
+        }
     }
 });
 app.ports.renderImage.subscribe(({ permutations, level, initialVariables }) => {

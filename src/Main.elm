@@ -29,7 +29,7 @@ type alias Model =
     , selectionState : SelectionState
     , showHelp : Bool
     , tutorial : Maybe Tutorial.Page
-    , windowWidth : Int
+    , window : { width : Int, height : Int }
     }
 
 
@@ -254,30 +254,44 @@ update msg ({ settings } as model) =
                 Nothing ->
                     ( model, Cmd.none )
 
-        WindowWidthChanged width ->
-            ( { model | windowWidth = width }, Cmd.none )
+        WindowChanged width height ->
+            ( { model | window = { width = width, height = height } }, Cmd.none )
 
 
 view : Model -> Browser.Document Msg
 view model =
+    let
+        isMobile =
+            (model.window.width < 600)
+                && (toFloat model.window.height > (toFloat model.window.width * 1.75))
+    in
     { title = "Fraquilt"
     , body =
         case model.tutorial of
             Just page ->
-                [ Tutorial.view page model.windowWidth |> Html.map TutorialMsg ]
+                [ Tutorial.view page model.window.height |> Html.map TutorialMsg ]
 
             Nothing ->
                 [ Html.div
-                    [ HA.style "display" "flex"
-                    , HA.style "flex-direction" "row"
-                    , HA.style "align-items" "center"
-                    , HA.style "justify-content" "space-between"
-                    , HA.style "height" "100vh"
-                    , HA.style "width" "100vw"
-                    , HA.style "flex-wrap" "wrap"
-                    , HA.style "font-family" "sans-serif"
-                    , HA.style "overflow" "auto"
-                    ]
+                    ([ HA.style "display" "flex"
+                     , HA.style "align-items" "center"
+                     , HA.style "height" "100vh"
+                     , HA.style "width" "100vw"
+                     , HA.style "font-family" "sans-serif"
+                     ]
+                        ++ (if isMobile then
+                                [ HA.style "flex-direction" "column"
+                                , HA.style "align-items" "center"
+                                ]
+
+                            else
+                                [ HA.style "flex-direction" "row"
+                                , HA.style "justify-content" "space-between"
+                                , HA.style "flex-wrap" "wrap"
+                                , HA.style "overflow" "auto"
+                                ]
+                           )
+                    )
                     [ Html.div
                         [ HA.style "cursor" "pointer"
                         , HA.style "margin" "10px"
@@ -307,7 +321,7 @@ view model =
                         Info.helpView
 
                       else
-                        Settings.viewEditSettings model.selectionState model.settings
+                        Settings.viewEditSettings model.selectionState model.settings isMobile
                     ]
                 ]
     }
@@ -315,7 +329,7 @@ view model =
 
 type alias Flags =
     { randomSeed : Int
-    , windowWidth : Int
+    , window : { width : Int, height : Int }
     }
 
 
@@ -353,7 +367,7 @@ init flags url key =
             , selectionState = NoneSelected
             , showHelp = False
             , tutorial = tutorial
-            , windowWidth = flags.windowWidth
+            , window = flags.window
             }
 
         -- Todo: handle decode error
@@ -374,7 +388,7 @@ init flags url key =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Browser.Events.onResize (\w h -> WindowWidthChanged w)
+    Browser.Events.onResize WindowChanged
 
 
 main : Program Flags Model Msg
