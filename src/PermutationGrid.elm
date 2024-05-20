@@ -6,6 +6,7 @@ import Json.Encode as Encode
 import Permutation exposing (Permutation)
 import Random
 import Types exposing (Quadrant(..), SelectionState(..))
+import UI exposing (pxFloat, pxInt)
 
 
 type alias PermutationGrid =
@@ -97,6 +98,7 @@ view :
     , endSelection : Int -> msg
     , cancelSelection : msg
     , selectionState : SelectionState
+    , dotPixelSize : Int
     }
     -> PermutationGrid
     -> Html msg
@@ -107,12 +109,16 @@ view config settings =
             , startSelection = config.startSelection quadrant
             , endSelection = config.endSelection
             , cancelSelection = config.cancelSelection
+            , dotPixelSize = config.dotPixelSize
             }
+
+        permWidth =
+            config.dotPixelSize * 5 |> pxInt
     in
     Html.div
         [ HA.style "display" "grid"
-        , HA.style "grid-template-columns" "100px 100px"
-        , HA.style "grid-gap" "30px"
+        , HA.style "grid-template-columns" (permWidth ++ " " ++ permWidth)
+        , HA.style "grid-gap" (pxFloat (toFloat config.dotPixelSize * 1.5))
         ]
         [ Permutation.view (permutationConfig TopLeft) settings.tl
         , Permutation.view (permutationConfig TopRight) settings.tr

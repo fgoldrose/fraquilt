@@ -10,8 +10,9 @@ import Maybe.Extra
 import Random
 import Random.List
 import Svg exposing (Svg)
-import Svg.Attributes
+import Svg.Attributes exposing (strokeWidth)
 import Types exposing (PermutationSelection(..))
+import UI exposing (pxFloat, pxInt)
 
 
 type alias Permutation =
@@ -73,6 +74,7 @@ type alias Config msg =
     , startSelection : Int -> msg
     , endSelection : Int -> msg
     , cancelSelection : msg
+    , dotPixelSize : Int
     }
 
 
@@ -84,21 +86,18 @@ view config permutation =
 
         listRange =
             List.range 0 (numVars - 1)
-
-        pixelSize =
-            ((30 * numVars) |> String.fromInt) ++ "px"
     in
     Html.div
         [ HA.style "background-color" "rgb(200, 200, 200)"
         , HA.style "border-radius" "6%"
-        , HA.style "padding" "20px 0"
+        , HA.style "padding" (pxInt config.dotPixelSize ++ " 0")
         ]
         [ Html.div
             [ HA.style "position" "relative"
-            , HA.style "width" "100px"
-            , HA.style "height" pixelSize
+            , HA.style "width" (pxInt (config.dotPixelSize * 5))
+            , HA.style "height" (pxInt (round (toFloat (config.dotPixelSize * (numVars - 1)) * 2)))
             ]
-            (lines permutation
+            (lines (toFloat config.dotPixelSize / 10) permutation
                 :: List.map
                     (dot
                         { side = Left
@@ -150,7 +149,10 @@ dot { side, totalVars, config } index =
                 Selected selectedIndex ->
                     if selectedIndex == index then
                         [ HA.style "background-color" "rgb(0, 0, 255)"
-                        , HA.style "outline" "2px solid rgba(0, 100, 255, 0.5)"
+                        , HA.style "outline"
+                            (pxFloat (toFloat config.dotPixelSize / 10)
+                                ++ " solid rgba(0, 100, 255, 0.5)"
+                            )
                         , HE.onClick cancelSelection
                         ]
 
@@ -171,11 +173,22 @@ dot { side, totalVars, config } index =
             , [ HA.style "background-color" "black" ]
             )
 
+        dropShadow =
+            HA.style "filter"
+                ("drop-shadow("
+                    ++ pxFloat (toFloat config.dotPixelSize / 4)
+                    ++ " "
+                    ++ pxFloat (toFloat config.dotPixelSize / 4)
+                    ++ " "
+                    ++ pxFloat (toFloat config.dotPixelSize / 10)
+                    ++ " rgba(0, 0, 0, 0.5))"
+                )
+
         rightStyles =
             [ HA.style "right" "0"
             , HA.style "transform" "translate(50%, -50%)"
             , HA.style "cursor" "pointer"
-            , HA.style "filter" "drop-shadow(5px 5px 2px rgba(0, 0, 0, 0.5))"
+            , dropShadow
             , HA.style "transition" "background-color 0.2s ease-in"
             ]
                 ++ rightModeStyles
@@ -183,14 +196,14 @@ dot { side, totalVars, config } index =
         leftStyles =
             [ HA.style "left" "0"
             , HA.style "transform" "translate(-50%, -50%)"
-            , HA.style "filter" "drop-shadow(5px 5px 2px rgba(0, 0, 0, 0.5))"
+            , dropShadow
             , HA.style "transition" "background-color 0.2s ease-in"
             ]
                 ++ leftModeStyles
     in
     Html.div
-        ([ HA.style "width" "20px"
-         , HA.style "height" "20px"
+        ([ HA.style "width" (pxInt config.dotPixelSize)
+         , HA.style "height" (pxInt config.dotPixelSize)
          , HA.style "border-radius" "100%"
          , HA.style "position" "absolute"
          , HA.style "top"
@@ -209,8 +222,8 @@ dot { side, totalVars, config } index =
         []
 
 
-lines : Permutation -> Html msg
-lines permutation =
+lines : Float -> Permutation -> Html msg
+lines strokeWidth permutation =
     let
         numVars =
             List.length permutation
@@ -233,6 +246,7 @@ lines permutation =
                                     { totalVars = numVars
                                     , fromIndex = fromIndex
                                     , toIndex = toIndex
+                                    , strokeWidth = strokeWidth
                                     }
                             )
                 )
@@ -241,8 +255,8 @@ lines permutation =
         ]
 
 
-line : { totalVars : Int, fromIndex : Int, toIndex : Int } -> Svg msg
-line { totalVars, fromIndex, toIndex } =
+line : { totalVars : Int, fromIndex : Int, toIndex : Int, strokeWidth : Float } -> Svg msg
+line { totalVars, fromIndex, toIndex, strokeWidth } =
     let
         y1 =
             getTopPositionForIndex
@@ -262,7 +276,7 @@ line { totalVars, fromIndex, toIndex } =
         , Svg.Attributes.x1 "0%"
         , Svg.Attributes.x2 "100%"
         , Svg.Attributes.stroke "black"
-        , Svg.Attributes.strokeWidth "2"
+        , Svg.Attributes.strokeWidth (String.fromFloat strokeWidth)
         ]
         []
 

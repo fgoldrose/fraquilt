@@ -3,6 +3,7 @@ module Main exposing (..)
 import AppUrl
 import Browser
 import Browser.Dom
+import Browser.Events
 import Browser.Navigation as Nav
 import Colors
 import Html
@@ -28,6 +29,7 @@ type alias Model =
     , selectionState : SelectionState
     , showHelp : Bool
     , tutorial : Maybe Tutorial.Page
+    , windowWidth : Int
     }
 
 
@@ -252,6 +254,9 @@ update msg ({ settings } as model) =
                 Nothing ->
                     ( model, Cmd.none )
 
+        WindowWidthChanged width ->
+            ( { model | windowWidth = width }, Cmd.none )
+
 
 view : Model -> Browser.Document Msg
 view model =
@@ -259,7 +264,7 @@ view model =
     , body =
         case model.tutorial of
             Just page ->
-                [ Tutorial.view page |> Html.map TutorialMsg ]
+                [ Tutorial.view page model.windowWidth |> Html.map TutorialMsg ]
 
             Nothing ->
                 [ Html.div
@@ -309,15 +314,14 @@ view model =
 
 
 type alias Flags =
-    { randomSeed : Int }
+    { randomSeed : Int
+    , windowWidth : Int
+    }
 
 
 init : Flags -> Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url key =
     let
-        appUrl =
-            AppUrl.fromUrl url
-
         makeModel : Maybe Settings -> Maybe Tutorial.Page -> Model
         makeModel maybeSettings tutorial =
             let
@@ -349,6 +353,7 @@ init flags url key =
             , selectionState = NoneSelected
             , showHelp = False
             , tutorial = tutorial
+            , windowWidth = flags.windowWidth
             }
 
         -- Todo: handle decode error
@@ -369,7 +374,7 @@ init flags url key =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.none
+    Browser.Events.onResize (\w h -> WindowWidthChanged w)
 
 
 main : Program Flags Model Msg

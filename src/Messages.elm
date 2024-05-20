@@ -20,3 +20,4 @@ type Msg
     | CancelSelection
     | ShowHelpInfo Bool
     | TutorialMsg Tutorial.Msg
+    | WindowWidthChanged Int

@@ -5,6 +5,16 @@ import Html.Attributes as HA
 import Html.Events as HE
 
 
+pxInt : Int -> String
+pxInt i =
+    String.fromInt i ++ "px"
+
+
+pxFloat : Float -> String
+pxFloat f =
+    String.fromFloat f ++ "px"
+
+
 sectionWithName : String -> List (Html msg) -> Html msg
 sectionWithName labelText elements =
     Html.div

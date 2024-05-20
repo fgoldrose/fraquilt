@@ -21,7 +21,7 @@ export type Ports = {
 
 declare const Elm: {
     Main: {
-        init(options: { node?: HTMLElement | null; flags: { randomSeed: number } }): App;
+        init(options: { node?: HTMLElement | null; flags: { randomSeed: number, windowWidth: number } }): App;
     };
 };
 export { Elm };

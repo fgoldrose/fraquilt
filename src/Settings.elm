@@ -136,6 +136,7 @@ viewPermutationGrid selectionState settings =
         , endSelection = EndSelection
         , cancelSelection = CancelSelection
         , selectionState = selectionState
+        , dotPixelSize = 20
         }
         settings.permutations
     , Html.div

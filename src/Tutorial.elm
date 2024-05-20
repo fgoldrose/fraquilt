@@ -11,6 +11,7 @@ import PermutationGrid exposing (PermutationGrid)
 import Routing exposing (TutorialRoute(..))
 import Svg.Attributes as SvgAttr
 import Types exposing (PermutationSelection(..), Quadrant(..), SelectionState(..))
+import UI exposing (pxFloat, pxInt)
 
 
 type Page
@@ -79,8 +80,8 @@ xIcon =
         ]
 
 
-view : Page -> Html Msg
-view page =
+view : Page -> Int -> Html Msg
+view page windowWidth =
     let
         pageView =
             case page of
@@ -91,10 +92,10 @@ view page =
                     page2 state
 
                 Page3 state ->
-                    page3 state
+                    page3 state windowWidth
 
                 Page4 state ->
-                    page4 state
+                    page4 state windowWidth
 
                 EndPage ->
                     Html.div
@@ -248,34 +249,6 @@ permute colors permutation =
         |> Array.fromList
 
 
-permutationInputOutput : InitialVariables -> Maybe Int -> Permutation -> Html Msg
-permutationInputOutput colors selectedIndex permutation =
-    Html.div
-        [ HA.style "display" "flex"
-        , HA.style "flex-direction" "row"
-        , HA.style "align-items" "center"
-        , HA.style "gap" "20px"
-        ]
-        [ Colors.view ChangeInitialColor colors
-        , rightArrow
-        , Permutation.view
-            { permutationSelection =
-                case selectedIndex of
-                    Just index ->
-                        Selected index
-
-                    Nothing ->
-                        PromptSelection
-            , startSelection = StartSelection
-            , endSelection = EndSelection
-            , cancelSelection = CancelSelection
-            }
-            permutation
-        , rightArrow
-        , Colors.readOnlyView (permute colors permutation)
-        ]
-
-
 page2 : Page2State -> Html Msg
 page2 { colors, permutation, selectedIndex, hasChangedPermutation } =
     Html.div
@@ -286,7 +259,33 @@ page2 { colors, permutation, selectedIndex, hasChangedPermutation } =
         , HA.style "padding" "20px"
         ]
         ([ description "A permutation changes the order of a list of colors"
-         , permutationInputOutput colors selectedIndex permutation
+         , Html.div
+            [ HA.style "display" "flex"
+            , HA.style "flex-wrap" "wrap"
+            , HA.style "flex-direction" "row"
+            , HA.style "align-items" "center"
+            , HA.style "justify-content" "center"
+            , HA.style "gap" "15px"
+            ]
+            [ Colors.view ChangeInitialColor colors
+            , rightArrow
+            , Permutation.view
+                { permutationSelection =
+                    case selectedIndex of
+                        Just index ->
+                            Selected index
+
+                        Nothing ->
+                            PromptSelection
+                , startSelection = StartSelection
+                , endSelection = EndSelection
+                , cancelSelection = CancelSelection
+                , dotPixelSize = 20
+                }
+                permutation
+            , rightArrow
+            , Colors.readOnlyView (permute colors permutation)
+            ]
          ]
             ++ (if hasChangedPermutation then
                     [ description "See how the output changes depending on the permutation"
@@ -314,7 +313,7 @@ grid :
     , bl : Html msg
     , br : Html msg
     }
-    -> Int
+    -> Float
     -> Html msg
 grid items size =
     let
@@ -322,8 +321,8 @@ grid items size =
             Html.div
                 [ HA.style "border" "0.5px solid black"
                 , HA.style "display" "flex"
-                , HA.style "width" (String.fromInt size ++ "px")
-                , HA.style "height" (String.fromInt size ++ "px")
+                , HA.style "width" (String.fromFloat size ++ "px")
+                , HA.style "height" (String.fromFloat size ++ "px")
                 , HA.style "align-items" "center"
                 , HA.style "justify-content" "center"
                 ]
@@ -347,32 +346,6 @@ type alias Page3State =
     }
 
 
-permutationGridInputOutput : InitialVariables -> PermutationGrid -> (PermutationGrid -> Html Msg) -> Html Msg
-permutationGridInputOutput colors permutations permutationsView =
-    Html.div
-        [ HA.style "display" "flex"
-        , HA.style "flex-direction" "row"
-        , HA.style "align-items" "center"
-        , HA.style "gap" "20px"
-        , HA.style "max-width" "100%"
-        , HA.style "flex-wrap" "wrap"
-        , HA.style "justify-content" "center"
-        ]
-        [ Colors.view ChangeInitialColor colors
-        , rightArrow
-        , permutationsView
-            permutations
-        , rightArrow
-        , grid
-            { tl = Colors.readOnlyView (permute colors permutations.tl)
-            , tr = Colors.readOnlyView (permute colors permutations.tr)
-            , bl = Colors.readOnlyView (permute colors permutations.bl)
-            , br = Colors.readOnlyView (permute colors permutations.br)
-            }
-            150
-        ]
-
-
 transform : String -> Html msg -> Html msg
 transform scale item =
     Html.div
@@ -381,7 +354,7 @@ transform scale item =
         [ item ]
 
 
-level2Grid : Int -> InitialVariables -> PermutationGrid -> Html msg
+level2Grid : Float -> InitialVariables -> PermutationGrid -> Html msg
 level2Grid size colors permutations =
     let
         tlOutput =
@@ -397,88 +370,123 @@ level2Grid size colors permutations =
             permute colors permutations.br
 
         smallerSize =
-            size // 2
+            size / 2
+
+        smallerColorView c =
+            if size >= 200 then
+                Colors.readOnlyView c
+
+            else
+                Colors.readOnlyView c |> transform "50%"
     in
     grid
         { tl =
             grid
-                { tl = Colors.readOnlyView (permute tlOutput permutations.tl)
-                , tr = Colors.readOnlyView (permute tlOutput permutations.tr)
-                , bl = Colors.readOnlyView (permute tlOutput permutations.bl)
-                , br = Colors.readOnlyView (permute tlOutput permutations.br)
+                { tl = smallerColorView (permute tlOutput permutations.tl)
+                , tr = smallerColorView (permute tlOutput permutations.tr)
+                , bl = smallerColorView (permute tlOutput permutations.bl)
+                , br = smallerColorView (permute tlOutput permutations.br)
                 }
                 smallerSize
         , tr =
             grid
-                { tl = Colors.readOnlyView (permute trOutput permutations.tl)
-                , tr = Colors.readOnlyView (permute trOutput permutations.tr)
-                , bl = Colors.readOnlyView (permute trOutput permutations.bl)
-                , br = Colors.readOnlyView (permute trOutput permutations.br)
+                { tl = smallerColorView (permute trOutput permutations.tl)
+                , tr = smallerColorView (permute trOutput permutations.tr)
+                , bl = smallerColorView (permute trOutput permutations.bl)
+                , br = smallerColorView (permute trOutput permutations.br)
                 }
                 smallerSize
         , bl =
             grid
-                { tl = Colors.readOnlyView (permute blOutput permutations.tl)
-                , tr = Colors.readOnlyView (permute blOutput permutations.tr)
-                , bl = Colors.readOnlyView (permute blOutput permutations.bl)
-                , br = Colors.readOnlyView (permute blOutput permutations.br)
+                { tl = smallerColorView (permute blOutput permutations.tl)
+                , tr = smallerColorView (permute blOutput permutations.tr)
+                , bl = smallerColorView (permute blOutput permutations.bl)
+                , br = smallerColorView (permute blOutput permutations.br)
                 }
                 smallerSize
         , br =
             grid
-                { tl = Colors.readOnlyView (permute brOutput permutations.tl)
-                , tr = Colors.readOnlyView (permute brOutput permutations.tr)
-                , bl = Colors.readOnlyView (permute brOutput permutations.bl)
-                , br = Colors.readOnlyView (permute brOutput permutations.br)
+                { tl = smallerColorView (permute brOutput permutations.tl)
+                , tr = smallerColorView (permute brOutput permutations.tr)
+                , bl = smallerColorView (permute brOutput permutations.bl)
+                , br = smallerColorView (permute brOutput permutations.br)
                 }
                 smallerSize
         }
         size
 
 
-page3 : Page3State -> Html Msg
-page3 { colors, permutations, selectionState, hasChangedPermutation, showProcess } =
+page3 : Page3State -> Int -> Html Msg
+page3 { colors, permutations, selectionState, hasChangedPermutation, showProcess } windowWidth =
     let
+        permutationGridInputOutput =
+            Html.div
+                [ HA.style "display" "flex"
+                , HA.style "flex-direction" "row"
+                , HA.style "align-items" "center"
+                , HA.style "gap" "20px"
+                , HA.style "max-width" "100%"
+                , HA.style "flex-wrap" "wrap"
+                , HA.style "justify-content" "center"
+                ]
+                [ Colors.view ChangeInitialColor colors
+                , rightArrow
+                , PermutationGrid.view
+                    { selectionState = selectionState
+                    , startSelection = StartSelectionQuadrant
+                    , endSelection = EndSelection
+                    , cancelSelection = CancelSelection
+                    , dotPixelSize = 20
+                    }
+                    permutations
+                , rightArrow
+                , grid
+                    { tl = Colors.readOnlyView (permute colors permutations.tl)
+                    , tr = Colors.readOnlyView (permute colors permutations.tr)
+                    , bl = Colors.readOnlyView (permute colors permutations.bl)
+                    , br = Colors.readOnlyView (permute colors permutations.br)
+                    }
+                    (min (0.9 * toFloat windowWidth / 2) 150)
+                ]
+
+        topLevelGridSize =
+            min (0.9 * toFloat windowWidth / 2) 300
+
         subGridView c =
             Html.div
                 [ HA.style "display" "flex"
                 , HA.style "flex-direction" "row"
                 , HA.style "align-items" "center"
+                , HA.style "justify-content" "center"
                 , HA.style "gap" "2px"
+                , HA.style "flex-wrap" "wrap"
                 ]
-                [ Colors.readOnlyView c
+                [ Colors.readOnlyView c |> transform "50%"
                 , smallRightArrow
-                , Html.div
-                    [ HA.style "width" "75px"
-                    ]
-                    [ Html.div
-                        [ HA.style "transform" "scale(25%) translateX(-100%)"
-                        ]
-                        [ PermutationGrid.view
-                            { selectionState = NoneSelected
-                            , startSelection = \_ _ -> NoOp
-                            , endSelection = \_ -> NoOp
-                            , cancelSelection = NoOp
-                            }
-                            permutations
-                        ]
-                    ]
+                , PermutationGrid.view
+                    { selectionState = NoneSelected
+                    , startSelection = \_ _ -> NoOp
+                    , endSelection = \_ -> NoOp
+                    , cancelSelection = NoOp
+                    , dotPixelSize = 5
+                    }
+                    permutations
                 , smallRightArrow
                 , grid
                     { tl =
                         Colors.readOnlyView (permute c permutations.tl)
-                            |> transform "25%"
+                            |> transform "20%"
                     , tr =
                         Colors.readOnlyView (permute c permutations.tr)
-                            |> transform "25%"
+                            |> transform "20%"
                     , bl =
                         Colors.readOnlyView (permute c permutations.bl)
-                            |> transform "25%"
+                            |> transform "20%"
                     , br =
                         Colors.readOnlyView (permute c permutations.br)
-                            |> transform "25%"
+                            |> transform "20%"
                     }
-                    40
+                    (topLevelGridSize / 8)
                 ]
 
         nextLevel =
@@ -493,10 +501,10 @@ page3 { colors, permutations, selectionState, hasChangedPermutation, showProcess
                     , bl = subGridView (permute colors permutations.bl)
                     , br = subGridView (permute colors permutations.br)
                     }
-                    300
+                    topLevelGridSize
 
               else
-                level2Grid 300 colors permutations
+                level2Grid topLevelGridSize colors permutations
             , Html.button
                 [ HE.onClick (ToggleShowProcess (not showProcess))
                 , HA.style "padding" "10px"
@@ -527,15 +535,7 @@ page3 { colors, permutations, selectionState, hasChangedPermutation, showProcess
         ]
         ([ description "We will have 4 permutations, one for each quadrant."
          , description "After applying these permutations to the input list of colors, we end up with an output list for each quadrant."
-         , permutationGridInputOutput colors
-            permutations
-            (PermutationGrid.view
-                { selectionState = selectionState
-                , startSelection = StartSelectionQuadrant
-                , endSelection = EndSelection
-                , cancelSelection = CancelSelection
-                }
-            )
+         , permutationGridInputOutput
          ]
             ++ (if not hasChangedPermutation then
                     [ description "Try changing the permutations and see how the output changes" ]
@@ -546,8 +546,8 @@ page3 { colors, permutations, selectionState, hasChangedPermutation, showProcess
         )
 
 
-page4 : Page3State -> Html Msg
-page4 { colors, permutations, selectionState } =
+page4 : Page3State -> Int -> Html Msg
+page4 { colors, permutations, selectionState } windowWidth =
     let
         outputImage =
             let
@@ -566,8 +566,8 @@ page4 { colors, permutations, selectionState } =
                 colorDiv cs =
                     Html.div
                         [ HA.style "background-color" (Array.get 0 cs |> Maybe.withDefault "white")
-                        , HA.style "width" "100px"
-                        , HA.style "height" "100px"
+                        , HA.style "width" (pxInt (min (windowWidth // 5) 100))
+                        , HA.style "height" (pxInt (min (windowWidth // 5) 100))
                         ]
                         []
 
@@ -581,40 +581,37 @@ page4 { colors, permutations, selectionState } =
                         , colorDiv bl
                         , colorDiv br
                         ]
-
-                level2 =
-                    Html.div
-                        [ HA.style "display" "grid"
-                        , HA.style "grid-template-columns" "1fr 1fr"
-                        , HA.style "border" "1px solid black"
-                        ]
-                        [ gridColors
-                            { tl = permute tlOutput permutations.tl
-                            , tr = permute tlOutput permutations.tr
-                            , bl = permute tlOutput permutations.bl
-                            , br = permute tlOutput permutations.br
-                            }
-                        , gridColors
-                            { tl = permute trOutput permutations.tl
-                            , tr = permute trOutput permutations.tr
-                            , bl = permute trOutput permutations.bl
-                            , br = permute trOutput permutations.br
-                            }
-                        , gridColors
-                            { tl = permute blOutput permutations.tl
-                            , tr = permute blOutput permutations.tr
-                            , bl = permute blOutput permutations.bl
-                            , br = permute blOutput permutations.br
-                            }
-                        , gridColors
-                            { tl = permute brOutput permutations.tl
-                            , tr = permute brOutput permutations.tr
-                            , bl = permute brOutput permutations.bl
-                            , br = permute brOutput permutations.br
-                            }
-                        ]
             in
-            level2
+            Html.div
+                [ HA.style "display" "grid"
+                , HA.style "grid-template-columns" "1fr 1fr"
+                , HA.style "border" "1px solid black"
+                ]
+                [ gridColors
+                    { tl = permute tlOutput permutations.tl
+                    , tr = permute tlOutput permutations.tr
+                    , bl = permute tlOutput permutations.bl
+                    , br = permute tlOutput permutations.br
+                    }
+                , gridColors
+                    { tl = permute trOutput permutations.tl
+                    , tr = permute trOutput permutations.tr
+                    , bl = permute trOutput permutations.bl
+                    , br = permute trOutput permutations.br
+                    }
+                , gridColors
+                    { tl = permute blOutput permutations.tl
+                    , tr = permute blOutput permutations.tr
+                    , bl = permute blOutput permutations.bl
+                    , br = permute blOutput permutations.br
+                    }
+                , gridColors
+                    { tl = permute brOutput permutations.tl
+                    , tr = permute brOutput permutations.tr
+                    , bl = permute brOutput permutations.bl
+                    , br = permute brOutput permutations.br
+                    }
+                ]
     in
     Html.div
         [ HA.id "page"
@@ -640,6 +637,7 @@ page4 { colors, permutations, selectionState } =
                 , startSelection = StartSelectionQuadrant
                 , endSelection = EndSelection
                 , cancelSelection = CancelSelection
+                , dotPixelSize = 20
                 }
                 permutations
             , Html.div
@@ -679,7 +677,7 @@ page4 { colors, permutations, selectionState } =
             , HA.style "flex-wrap" "wrap"
             , HA.style "justify-content" "center"
             ]
-            [ level2Grid 200 colors permutations
+            [ level2Grid (min (0.9 * toFloat windowWidth / 2) 200) colors permutations
             , rightArrow
             , outputImage
             ]
