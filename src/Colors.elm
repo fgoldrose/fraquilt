@@ -5,6 +5,7 @@ import Html exposing (Html)
 import Html.Attributes as HA
 import Html.Events as HE
 import Json.Encode as Encode
+import UI exposing (pxFloat, pxInt)
 
 
 type alias Color =
@@ -61,46 +62,38 @@ fromUrlString str =
         |> Array.fromList
 
 
-view : (Int -> String -> msg) -> InitialVariables -> Html msg
-view updateColorMsg initialVars =
+view : Float -> Maybe (Int -> String -> msg) -> InitialVariables -> Html msg
+view colorSize maybeUpdateColorMsg initialVars =
     Html.div
         [ HA.style "display" "flex"
         , HA.style "flex-direction" "column"
         , HA.style "align-items" "center"
-        , HA.style "gap" "5px"
+        , HA.style "gap" (pxFloat (colorSize / 8))
         ]
         (List.indexedMap
             (\index initVar ->
-                Html.input
-                    [ HA.type_ "color"
-                    , HA.id ("initVar-" ++ String.fromInt index)
-                    , HA.value initVar
-                    , HE.onInput (updateColorMsg index)
-                    ]
-                    []
-            )
-            (Array.toList initialVars)
-        )
+                case maybeUpdateColorMsg of
+                    Just updateColorMsg ->
+                        Html.input
+                            [ HA.type_ "color"
+                            , HA.id ("initVar-" ++ String.fromInt index)
+                            , HA.value initVar
+                            , HA.style "height" (pxFloat colorSize)
+                            , HA.style "width" (pxFloat colorSize)
+                            , HA.style "padding" "0"
+                            , HE.onInput (updateColorMsg index)
+                            ]
+                            []
 
-
-readOnlyView : InitialVariables -> Html msg
-readOnlyView initialVars =
-    Html.div
-        [ HA.style "display" "flex"
-        , HA.style "flex-direction" "column"
-        , HA.style "align-items" "center"
-        , HA.style "gap" "5px"
-        ]
-        (List.indexedMap
-            (\index initVar ->
-                Html.input
-                    [ HA.type_ "color"
-                    , HA.id ("initVar-" ++ String.fromInt index)
-                    , HA.value initVar
-                    , HA.disabled True
-                    , HA.readonly True
-                    ]
-                    []
+                    Nothing ->
+                        Html.div
+                            [ HA.style "height" (pxFloat colorSize)
+                            , HA.style "width" (pxFloat colorSize)
+                            , HA.style "background-color" initVar
+                            , HA.style "border-radius" "5%"
+                            , HA.style "border" "1px solid black"
+                            ]
+                            []
             )
             (Array.toList initialVars)
         )

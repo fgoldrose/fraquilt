@@ -83,7 +83,7 @@ viewEditSettings selectionState settings =
             , viewLevel settings.level
             , viewPermutationGrid selectionState settings
             , viewNumberOfVariables (Colors.count settings.initialVariables)
-            , [ Colors.view UpdateInitialVar settings.initialVariables ]
+            , [ Colors.view 30 (Just UpdateInitialVar) settings.initialVariables ]
                 |> sectionWithName "Initial Colors"
             ]
         ]

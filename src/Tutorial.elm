@@ -207,7 +207,7 @@ page1 { colors, hasSelectedColor } =
         , HA.style "padding" "20px"
         ]
         [ description "We start with a list of colors."
-        , Colors.view ChangeInitialColor colors
+        , Colors.view 30 (Just ChangeInitialColor) colors
         , description "Try changing the value of a color"
         , if hasSelectedColor then
             nextButton Routing.Tutorial2
@@ -267,7 +267,7 @@ page2 { colors, permutation, selectedIndex, hasChangedPermutation } =
             , HA.style "justify-content" "center"
             , HA.style "gap" "15px"
             ]
-            [ Colors.view ChangeInitialColor colors
+            [ Colors.view 30 (Just ChangeInitialColor) colors
             , rightArrow
             , Permutation.view
                 { permutationSelection =
@@ -284,7 +284,7 @@ page2 { colors, permutation, selectedIndex, hasChangedPermutation } =
                 }
                 permutation
             , rightArrow
-            , Colors.readOnlyView (permute colors permutation)
+            , Colors.view 30 Nothing (permute colors permutation)
             ]
          ]
             ++ (if hasChangedPermutation then
@@ -321,8 +321,8 @@ grid items size =
             Html.div
                 [ HA.style "border" "0.5px solid black"
                 , HA.style "display" "flex"
-                , HA.style "width" (String.fromFloat size ++ "px")
-                , HA.style "height" (String.fromFloat size ++ "px")
+                , HA.style "width" (String.fromFloat (size / 2) ++ "px")
+                , HA.style "height" (String.fromFloat (size / 2) ++ "px")
                 , HA.style "align-items" "center"
                 , HA.style "justify-content" "center"
                 ]
@@ -346,14 +346,6 @@ type alias Page3State =
     }
 
 
-transform : String -> Html msg -> Html msg
-transform scale item =
-    Html.div
-        [ HA.style "transform" ("scale(" ++ scale ++ ")")
-        ]
-        [ item ]
-
-
 level2Grid : Float -> InitialVariables -> PermutationGrid -> Html msg
 level2Grid size colors permutations =
     let
@@ -373,11 +365,7 @@ level2Grid size colors permutations =
             size / 2
 
         smallerColorView c =
-            if size >= 200 then
-                Colors.readOnlyView c
-
-            else
-                Colors.readOnlyView c |> transform "50%"
+            Colors.view (size / 16) Nothing c
     in
     grid
         { tl =
@@ -429,7 +417,7 @@ page3 { colors, permutations, selectionState, hasChangedPermutation, showProcess
                 , HA.style "flex-wrap" "wrap"
                 , HA.style "justify-content" "center"
                 ]
-                [ Colors.view ChangeInitialColor colors
+                [ Colors.view 30 (Just ChangeInitialColor) colors
                 , rightArrow
                 , PermutationGrid.view
                     { selectionState = selectionState
@@ -441,16 +429,16 @@ page3 { colors, permutations, selectionState, hasChangedPermutation, showProcess
                     permutations
                 , rightArrow
                 , grid
-                    { tl = Colors.readOnlyView (permute colors permutations.tl)
-                    , tr = Colors.readOnlyView (permute colors permutations.tr)
-                    , bl = Colors.readOnlyView (permute colors permutations.bl)
-                    , br = Colors.readOnlyView (permute colors permutations.br)
+                    { tl = Colors.view 30 Nothing (permute colors permutations.tl)
+                    , tr = Colors.view 30 Nothing (permute colors permutations.tr)
+                    , bl = Colors.view 30 Nothing (permute colors permutations.bl)
+                    , br = Colors.view 30 Nothing (permute colors permutations.br)
                     }
-                    (min (0.9 * toFloat windowWidth / 2) 150)
+                    (min (0.9 * toFloat windowWidth) 300)
                 ]
 
         topLevelGridSize =
-            min (0.9 * toFloat windowWidth / 2) 300
+            min (0.9 * toFloat windowWidth) 600
 
         subGridView c =
             Html.div
@@ -461,7 +449,7 @@ page3 { colors, permutations, selectionState, hasChangedPermutation, showProcess
                 , HA.style "gap" "2px"
                 , HA.style "flex-wrap" "wrap"
                 ]
-                [ Colors.readOnlyView c |> transform "50%"
+                [ Colors.view 20 Nothing c
                 , smallRightArrow
                 , PermutationGrid.view
                     { selectionState = NoneSelected
@@ -472,21 +460,20 @@ page3 { colors, permutations, selectionState, hasChangedPermutation, showProcess
                     }
                     permutations
                 , smallRightArrow
-                , grid
-                    { tl =
-                        Colors.readOnlyView (permute c permutations.tl)
-                            |> transform "20%"
-                    , tr =
-                        Colors.readOnlyView (permute c permutations.tr)
-                            |> transform "20%"
-                    , bl =
-                        Colors.readOnlyView (permute c permutations.bl)
-                            |> transform "20%"
-                    , br =
-                        Colors.readOnlyView (permute c permutations.br)
-                            |> transform "20%"
+                , let
+                    smallGridSize =
+                        topLevelGridSize / 4
+
+                    colorSize =
+                        smallGridSize / 9
+                  in
+                  grid
+                    { tl = Colors.view colorSize Nothing (permute c permutations.tl)
+                    , tr = Colors.view colorSize Nothing (permute c permutations.tr)
+                    , bl = Colors.view colorSize Nothing (permute c permutations.bl)
+                    , br = Colors.view colorSize Nothing (permute c permutations.br)
                     }
-                    (topLevelGridSize / 8)
+                    smallGridSize
                 ]
 
         nextLevel =
@@ -630,7 +617,7 @@ page4 { colors, permutations, selectionState } windowWidth =
             , HA.style "flex-wrap" "wrap"
             , HA.style "justify-content" "center"
             ]
-            [ Colors.view ChangeInitialColor colors
+            [ Colors.view 30 (Just ChangeInitialColor) colors
             , rightArrow
             , PermutationGrid.view
                 { selectionState = selectionState
@@ -647,12 +634,12 @@ page4 { colors, permutations, selectionState } windowWidth =
                 ]
                 [ Html.text "1 level", rightArrow ]
             , grid
-                { tl = Colors.readOnlyView (permute colors permutations.tl)
-                , tr = Colors.readOnlyView (permute colors permutations.tr)
-                , bl = Colors.readOnlyView (permute colors permutations.bl)
-                , br = Colors.readOnlyView (permute colors permutations.br)
+                { tl = Colors.view 30 Nothing (permute colors permutations.tl)
+                , tr = Colors.view 30 Nothing (permute colors permutations.tr)
+                , bl = Colors.view 30 Nothing (permute colors permutations.bl)
+                , br = Colors.view 30 Nothing (permute colors permutations.br)
                 }
-                100
+                300
             , Html.div
                 [ HA.style "display" "flex"
                 , HA.style "flex-direction" "column"
@@ -660,12 +647,7 @@ page4 { colors, permutations, selectionState } windowWidth =
                 , HA.style "justify-content" "center"
                 ]
                 [ Html.text "2 levels", rightArrow ]
-            , Html.div
-                [ HA.style "transform" "scale(0.5) translate(-50%, -50%)"
-                , HA.style "width" "200px"
-                , HA.style "height" "200px"
-                ]
-                [ level2Grid 200 colors permutations ]
+            , level2Grid 300 colors permutations
             ]
         , description "But after some number of levels, we will want to transform the grid of color lists into an image."
         , description "We use the first color from a list as the value for that location in the image."
@@ -677,7 +659,7 @@ page4 { colors, permutations, selectionState } windowWidth =
             , HA.style "flex-wrap" "wrap"
             , HA.style "justify-content" "center"
             ]
-            [ level2Grid (min (0.9 * toFloat windowWidth / 2) 200) colors permutations
+            [ level2Grid (min (0.9 * toFloat windowWidth) 400) colors permutations
             , rightArrow
             , outputImage
             ]
