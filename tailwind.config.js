@@ -6,7 +6,7 @@ module.exports = {
   theme: {
     extend: {
       screens: {
-        'tall': { 'raw': '(max-aspect-ratio: 1/2)' },
+        'tall': { 'raw': '(max-aspect-ratio: 2/3)' },
       }
     },
   },
