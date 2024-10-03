@@ -18,6 +18,5 @@ type Msg
     | StartSelection Quadrant Int
     | EndSelection Int
     | CancelSelection
-    | ShowHelpInfo Bool
     | TutorialMsg Tutorial.Msg
     | WindowChanged Int Int

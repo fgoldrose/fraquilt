@@ -1,6 +1,5 @@
 module Main exposing (..)
 
-import AppUrl
 import Browser
 import Browser.Dom
 import Browser.Events
@@ -9,7 +8,6 @@ import Colors
 import Html
 import Html.Attributes as HA
 import Html.Events as HE
-import Info
 import Messages exposing (Msg(..))
 import Permutation
 import PermutationGrid
@@ -27,7 +25,6 @@ type alias Model =
     , key : Nav.Key
     , randomSeed : Random.Seed
     , selectionState : SelectionState
-    , showHelp : Bool
     , tutorial : Maybe Tutorial.Page
     , window : { width : Int, height : Int }
     }
@@ -239,9 +236,6 @@ update msg ({ settings } as model) =
             , Settings.change model.key newSettings
             )
 
-        ShowHelpInfo bool ->
-            ( { model | showHelp = bool }, Cmd.none )
-
         TutorialMsg tutorialMsg ->
             case model.tutorial of
                 Just page ->
@@ -285,11 +279,7 @@ view model =
                                 []
                             ]
                         ]
-                    , if model.showHelp then
-                        Info.helpView
-
-                      else
-                        Settings.viewEditSettings model.selectionState model.settings
+                    , Settings.viewEditSettings model.selectionState model.settings
                     ]
                 ]
     }
@@ -333,7 +323,6 @@ init flags url key =
             , key = key
             , randomSeed = randomSeed
             , selectionState = NoneSelected
-            , showHelp = False
             , tutorial = tutorial
             , window = flags.window
             }

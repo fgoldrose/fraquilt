@@ -56,22 +56,13 @@ viewEditSettings selectionState settings =
     Html.div
         [ HA.class "h-full grow-[2] overflow-y-scroll bg-neutral-100 relative tall:w-full" ]
         [ Html.div
-            [ HA.class "absolute top-3 right-3"
-            ]
-            [ helpIcon
-            ]
+            [ HA.class "absolute top-3 right-3" ]
+            [ helpIcon ]
         , Html.div
-            [ HA.style "display" "flex"
-            , HA.style "flex-direction" "column"
-            , HA.style "align-items" "center"
-            , HA.style "gap" "20px"
-            , HA.style "margin" "50px 10px"
-            ]
+            [ HA.class "flex flex-col items-center gap-5 my-12 mx-3" ]
             [ Html.div
-                [ HA.style "font-size" "20px"
-                , HA.style "font-weight" "bold"
-                ]
-                [ Html.text "Configuration" ]
+                [ HA.class "text-2xl font-bold" ]
+                [ Html.text "Fraquilt" ]
             , viewLevel settings.level
             , viewPermutationGrid selectionState settings
             , viewNumberOfVariables (Colors.count settings.initialVariables)
@@ -106,15 +97,18 @@ viewLevel level =
 viewNumberOfVariables : Int -> Html Msg
 viewNumberOfVariables numVars =
     [ Html.div
-        [ HA.style "display" "flex"
-        , HA.style "flex-direction" "row"
-        , HA.style "align-items" "center"
-        , HA.style "gap" "10px"
+        [ HA.class "flex items-center gap-2"
         ]
-        [ Html.button [ HE.onClick (ChangeNumberOfVariables (numVars - 1)) ]
+        [ Html.button
+            [ HA.class "border border-black rounded-md px-2 hover:bg-neutral-200"
+            , HE.onClick (ChangeNumberOfVariables (numVars - 1))
+            ]
             [ Html.text "-" ]
         , Html.span [] [ Html.text (String.fromInt numVars) ]
-        , Html.button [ HE.onClick (ChangeNumberOfVariables (numVars + 1)) ]
+        , Html.button
+            [ HA.class "border border-black rounded-md px-2 hover:bg-neutral-200"
+            , HE.onClick (ChangeNumberOfVariables (numVars + 1))
+            ]
             [ Html.text "+" ]
         ]
     ]
@@ -132,15 +126,23 @@ viewPermutationGrid selectionState settings =
         }
         settings.permutations
     , Html.div
-        [ HA.style "display" "flex"
-        , HA.style "gap" "10px"
-        , HA.style "align-items" "center"
-        , HA.style "justify-items" "center"
-        , HA.style "margin" "5px"
+        [ HA.class "flex gap-2 items-center justify-items-center m-1 text-sm"
         ]
-        [ Html.button [ HE.onClick <| Randomize { symmetric = False } ] [ Html.text "Random" ]
-        , Html.button [ HE.onClick <| Randomize { symmetric = True } ] [ Html.text "Random Symmetric" ]
-        , Html.button [ HE.onClick ClearPermutations ] [ Html.text "Clear" ]
+        [ Html.button
+            [ HA.class "border border-black rounded-md px-2 hover:bg-neutral-200"
+            , HE.onClick <| Randomize { symmetric = False }
+            ]
+            [ Html.text "Random" ]
+        , Html.button
+            [ HA.class "border border-black rounded-md px-2 hover:bg-neutral-200"
+            , HE.onClick <| Randomize { symmetric = True }
+            ]
+            [ Html.text "Random Symmetric" ]
+        , Html.button
+            [ HA.class "border border-black rounded-md px-2 hover:bg-neutral-200"
+            , HE.onClick ClearPermutations
+            ]
+            [ Html.text "Clear" ]
         ]
     ]
         |> sectionWithName "Permutations"

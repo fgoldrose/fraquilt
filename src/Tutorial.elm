@@ -99,12 +99,7 @@ view page windowWidth =
 
                 EndPage ->
                     Html.div
-                        [ HA.style "display" "flex"
-                        , HA.style "flex-direction" "column"
-                        , HA.style "align-items" "center"
-                        , HA.style "gap" "20px"
-                        , HA.style "padding" "20px"
-                        ]
+                        [ HA.class "flex flex-col items-center gap-5 p-5" ]
                         [ description "You have now seen how we will generate an image from an initial list of colors and 4 permutations."
                         , description "In this tutorial, the number of colors was always 3, and we only showed up to 2 levels of recursion."
                         , description "In the actual application, you can change the number of colors and the level of recursion."
@@ -117,29 +112,15 @@ view page windowWidth =
                         ]
     in
     Html.div
-        [ HA.style "font-family" "sans-serif"
-        , HA.style "position" "relative"
-        , HA.style "display" "flex"
-        , HA.style "flex-direction" "column"
-        , HA.style "height" "100vh"
-        , HA.style "width" "100vw"
-        , HA.style "overflow" "scroll"
+        [ HA.class "font-sans relative flex flex-col h-screen w-screen overflow-scroll"
         , HA.id "page"
         ]
         [ Html.div
-            [ HA.style "display" "flex"
-            , HA.style "flex-direction" "column"
-            , HA.style "align-items" "center"
-            , HA.style "padding" "20px"
-            , HA.style "border-bottom" "1px solid black"
-            , HA.style "font-size" "30px"
-            , HA.style "font-weight" "bold"
+            [ HA.class "flex flex-col items-center p-5 border-b border-b-black text-3xl font-bold"
             ]
             [ Html.text "Tutorial" ]
         , Html.div
-            [ HA.style "position" "absolute"
-            , HA.style "top" "10px"
-            , HA.style "right" "10px"
+            [ HA.class "absolute top-3 right-3"
             ]
             [ xIcon
             ]
@@ -150,9 +131,7 @@ view page windowWidth =
 description : String -> Html Msg
 description str =
     Html.span
-        [ HA.style "text-align" "center"
-        , HA.style "font-size" "20px"
-        , HA.style "font-weight" "bold"
+        [ HA.class "text-center text-xl font-bold"
         ]
         [ Html.text str ]
 
@@ -160,10 +139,7 @@ description str =
 descriptionLines : List String -> Html Msg
 descriptionLines lines =
     Html.div
-        [ HA.style "display" "flex"
-        , HA.style "flex-direction" "column"
-        , HA.style "align-items" "center"
-        , HA.style "gap" "10px"
+        [ HA.class "flex flex-col items-center gap-3"
         ]
         (List.map description lines)
 
@@ -172,14 +148,7 @@ button : { route : Routing.Route, text : String } -> Html Msg
 button { route, text } =
     Html.a
         [ HA.href (Routing.reverse route)
-        , HA.style "background" "green"
-        , HA.style "padding" "10px"
-        , HA.style "text-align" "center"
-        , HA.style "border-radius" "5px"
-        , HA.style "color" "white"
-        , HA.style "font-weight" "bold"
-        , HA.style "text-decoration" "none"
-        , HA.style "cursor" "pointer"
+        , HA.class "bg-green-600 hover:bg-green-700 p-2 text-center rounded text-white font-bold cursor-pointer no-underline"
         ]
         [ Html.text text ]
 
@@ -200,12 +169,7 @@ type alias Page1State =
 page1 : Page1State -> Html Msg
 page1 { colors, hasSelectedColor } =
     Html.div
-        [ HA.style "display" "flex"
-        , HA.style "flex-direction" "column"
-        , HA.style "align-items" "center"
-        , HA.style "gap" "20px"
-        , HA.style "padding" "20px"
-        ]
+        [ HA.class "flex flex-col items-center gap-5 p-5" ]
         [ description "We start with a list of colors."
         , Colors.view 30 (Just ChangeInitialColor) colors
         , description "Try changing the value of a color"
@@ -252,21 +216,10 @@ permute colors permutation =
 page2 : Page2State -> Html Msg
 page2 { colors, permutation, selectedIndex, hasChangedPermutation } =
     Html.div
-        [ HA.style "display" "flex"
-        , HA.style "flex-direction" "column"
-        , HA.style "align-items" "center"
-        , HA.style "gap" "20px"
-        , HA.style "padding" "20px"
-        ]
+        [ HA.class "flex flex-col items-center gap-5 p-5" ]
         ([ description "A permutation changes the order of a list of colors"
          , Html.div
-            [ HA.style "display" "flex"
-            , HA.style "flex-wrap" "wrap"
-            , HA.style "flex-direction" "row"
-            , HA.style "align-items" "center"
-            , HA.style "justify-content" "center"
-            , HA.style "gap" "15px"
-            ]
+            [ HA.class "flex flex-wrap items-center justify-center gap-4" ]
             [ Colors.view 30 (Just ChangeInitialColor) colors
             , rightArrow
             , Permutation.view
@@ -319,12 +272,9 @@ grid items size =
     let
         gridItem i =
             Html.div
-                [ HA.style "border" "0.5px solid black"
-                , HA.style "display" "flex"
+                [ HA.class "border-[0.5px] border-black flex items-center justify-center"
                 , HA.style "width" (String.fromFloat (size / 2) ++ "px")
                 , HA.style "height" (String.fromFloat (size / 2) ++ "px")
-                , HA.style "align-items" "center"
-                , HA.style "justify-content" "center"
                 ]
                 [ i ]
     in
@@ -409,13 +359,7 @@ page3 { colors, permutations, selectionState, hasChangedPermutation, showProcess
     let
         permutationGridInputOutput =
             Html.div
-                [ HA.style "display" "flex"
-                , HA.style "flex-direction" "row"
-                , HA.style "align-items" "center"
-                , HA.style "gap" "20px"
-                , HA.style "max-width" "100%"
-                , HA.style "flex-wrap" "wrap"
-                , HA.style "justify-content" "center"
+                [ HA.class "flex items-center gap-5 max-w-full flex-wrap justify-center"
                 ]
                 [ Colors.view 30 (Just ChangeInitialColor) colors
                 , rightArrow
@@ -442,12 +386,7 @@ page3 { colors, permutations, selectionState, hasChangedPermutation, showProcess
 
         subGridView c =
             Html.div
-                [ HA.style "display" "flex"
-                , HA.style "flex-direction" "row"
-                , HA.style "align-items" "center"
-                , HA.style "justify-content" "center"
-                , HA.style "gap" "2px"
-                , HA.style "flex-wrap" "wrap"
+                [ HA.class "flex items-center justify-center gap-0.5 flex-wrap"
                 ]
                 [ Colors.view 20 Nothing c
                 , smallRightArrow
@@ -494,13 +433,7 @@ page3 { colors, permutations, selectionState, hasChangedPermutation, showProcess
                 level2Grid topLevelGridSize colors permutations
             , Html.button
                 [ HE.onClick (ToggleShowProcess (not showProcess))
-                , HA.style "padding" "10px"
-                , HA.style "text-align" "center"
-                , HA.style "border-radius" "5px"
-                , HA.style "color" "black"
-                , HA.style "font-weight" "bold"
-                , HA.style "text-decoration" "none"
-                , HA.style "cursor" "pointer"
+                , HA.class "p-2 text-center rounded-md text-black border border-black font-bold no-underline cursor-pointer hover:bg-neutral-50"
                 ]
                 [ if showProcess then
                     Html.text "Show output"
@@ -514,12 +447,7 @@ page3 { colors, permutations, selectionState, hasChangedPermutation, showProcess
             ]
     in
     Html.div
-        [ HA.style "display" "flex"
-        , HA.style "flex-direction" "column"
-        , HA.style "align-items" "center"
-        , HA.style "gap" "20px"
-        , HA.style "padding" "20px"
-        ]
+        [ HA.class "flex flex-col items-center gap-5 p-5" ]
         ([ description "We will have 4 permutations, one for each quadrant."
          , description "After applying these permutations to the input list of colors, we end up with an output list for each quadrant."
          , permutationGridInputOutput
@@ -602,21 +530,11 @@ page4 { colors, permutations, selectionState } windowWidth =
     in
     Html.div
         [ HA.id "page"
-        , HA.style "display" "flex"
-        , HA.style "flex-direction" "column"
-        , HA.style "align-items" "center"
-        , HA.style "gap" "20px"
-        , HA.style "padding" "20px"
+        , HA.class "flex flex-col items-center gap-5 p-5"
         ]
         [ description "We can continue to apply the permutations recursively, and we end up with a grid of color lists."
         , Html.div
-            [ HA.style "display" "flex"
-            , HA.style "flex-direction" "row"
-            , HA.style "align-items" "center"
-            , HA.style "gap" "20px"
-            , HA.style "flex-wrap" "wrap"
-            , HA.style "justify-content" "center"
-            ]
+            [ HA.class "flex items-center gap-5 flex-wrap justify-center" ]
             [ Colors.view 30 (Just ChangeInitialColor) colors
             , rightArrow
             , PermutationGrid.view
@@ -628,10 +546,7 @@ page4 { colors, permutations, selectionState } windowWidth =
                 }
                 permutations
             , Html.div
-                [ HA.style "display" "flex"
-                , HA.style "flex-direction" "column"
-                , HA.style "align-items" "center"
-                ]
+                [ HA.class "flex flex-col items-center" ]
                 [ Html.text "1 level", rightArrow ]
             , grid
                 { tl = Colors.view 30 Nothing (permute colors permutations.tl)
@@ -641,24 +556,14 @@ page4 { colors, permutations, selectionState } windowWidth =
                 }
                 300
             , Html.div
-                [ HA.style "display" "flex"
-                , HA.style "flex-direction" "column"
-                , HA.style "align-items" "center"
-                , HA.style "justify-content" "center"
-                ]
+                [ HA.class "flex flex-col items-center justify-center" ]
                 [ Html.text "2 levels", rightArrow ]
             , level2Grid 300 colors permutations
             ]
         , description "But after some number of levels, we will want to transform the grid of color lists into an image."
         , description "We use the first color from a list as the value for that location in the image."
         , Html.div
-            [ HA.style "display" "flex"
-            , HA.style "flex-direction" "row"
-            , HA.style "align-items" "center"
-            , HA.style "gap" "20px"
-            , HA.style "flex-wrap" "wrap"
-            , HA.style "justify-content" "center"
-            ]
+            [ HA.class "flex items-center gap-5 flex-wrap justify-center" ]
             [ level2Grid (min (0.9 * toFloat windowWidth) 400) colors permutations
             , rightArrow
             , outputImage

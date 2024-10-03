@@ -18,13 +18,10 @@ pxFloat f =
 sectionWithName : String -> List (Html msg) -> Html msg
 sectionWithName labelText elements =
     Html.div
-        [ HA.style "display" "flex"
-        , HA.style "flex-direction" "column"
-        , HA.style "align-items" "center"
-        , HA.style "gap" "5px"
+        [ HA.class "flex flex-col items-center gap-2"
         ]
         (Html.span
-            [ HA.style "font-weight" "bold" ]
+            [ HA.class "font-bold" ]
             [ Html.text labelText ]
             :: elements
         )
@@ -40,15 +37,11 @@ sliderWithLabel :
     -> Html msg
 sliderWithLabel { id, value, msg, min, max } =
     Html.div
-        [ HA.style "display" "flex"
-        , HA.style "flex-direction" "row"
-        , HA.style "align-items" "center"
-        , HA.style "gap" "5px"
+        [ HA.class "flex items-center gap-1"
         ]
         [ Html.label
             [ HA.for id
-            , HA.style "width" "30px"
-            , HA.style "text-align" "right"
+            , HA.class "w-7 text-right"
             ]
             [ Html.text (String.fromInt value) ]
         , Html.input

@@ -65,9 +65,7 @@ fromUrlString str =
 view : Float -> Maybe (Int -> String -> msg) -> InitialVariables -> Html msg
 view colorSize maybeUpdateColorMsg initialVars =
     Html.div
-        [ HA.style "display" "flex"
-        , HA.style "flex-direction" "column"
-        , HA.style "align-items" "center"
+        [ HA.class "flex flex-col items-center"
         , HA.style "gap" (pxFloat (colorSize / 8))
         ]
         (List.indexedMap
@@ -78,9 +76,9 @@ view colorSize maybeUpdateColorMsg initialVars =
                             [ HA.type_ "color"
                             , HA.id ("initVar-" ++ String.fromInt index)
                             , HA.value initVar
+                            , HA.class "rounded p-0 border border-black"
                             , HA.style "height" (pxFloat colorSize)
                             , HA.style "width" (pxFloat colorSize)
-                            , HA.style "padding" "0"
                             , HE.onInput (updateColorMsg index)
                             ]
                             []
