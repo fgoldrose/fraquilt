@@ -51,26 +51,12 @@ render settings =
     renderImage (settingsEncoder settings)
 
 
-viewEditSettings : SelectionState -> Settings -> Bool -> Html Msg
-viewEditSettings selectionState settings isMobile =
+viewEditSettings : SelectionState -> Settings -> Html Msg
+viewEditSettings selectionState settings =
     Html.div
-        ([ HA.style "height" "100%"
-         , HA.style "flex-grow" "2"
-         , HA.style "overflow-y" "scroll"
-         , HA.style "background-color" "rgb(240, 240, 240)"
-         , HA.style "position" "relative"
-         ]
-            ++ (if isMobile then
-                    [ HA.style "width" "100%" ]
-
-                else
-                    []
-               )
-        )
+        [ HA.class "h-full grow-[2] overflow-y-scroll bg-neutral-100 relative tall:w-full" ]
         [ Html.div
-            [ HA.style "position" "absolute"
-            , HA.style "top" "10px"
-            , HA.style "right" "10px"
+            [ HA.class "absolute top-3 right-3"
             ]
             [ helpIcon
             ]

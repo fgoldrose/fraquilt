@@ -260,11 +260,6 @@ update msg ({ settings } as model) =
 
 view : Model -> Browser.Document Msg
 view model =
-    let
-        isMobile =
-            (model.window.width < 600)
-                && (toFloat model.window.height > (toFloat model.window.width * 1.75))
-    in
     { title = "Fraquilt"
     , body =
         case model.tutorial of
@@ -273,38 +268,11 @@ view model =
 
             Nothing ->
                 [ Html.div
-                    ([ HA.style "display" "flex"
-                     , HA.style "align-items" "center"
-                     , HA.style "height" "100vh"
-                     , HA.style "width" "100vw"
-                     , HA.style "font-family" "sans-serif"
-                     ]
-                        ++ (if isMobile then
-                                [ HA.style "flex-direction" "column"
-                                , HA.style "align-items" "center"
-                                ]
-
-                            else
-                                [ HA.style "flex-direction" "row"
-                                , HA.style "justify-content" "space-between"
-                                , HA.style "flex-wrap" "wrap"
-                                , HA.style "overflow" "auto"
-                                ]
-                           )
-                    )
+                    [ HA.class "flex items-center h-screen w-screen font-sans overflow-auto justify-between flex-wrap tall:flex-nowrap tall:justify-normal tall:flex-col tall:overflow-hidden" ]
                     [ Html.div
-                        [ HA.style "cursor" "pointer"
-                        , HA.style "margin" "10px"
-                        , HA.style "display" "flex"
-                        , HA.style "align-items" "center"
-                        , HA.style "justify-content" "center"
-                        , HA.style "flex-grow" "1"
-                        ]
+                        [ HA.class "cursor-pointer m-3 flex items-center justify-center grow" ]
                         [ Html.div
-                            [ HA.style "max-width" "90vw"
-                            , HA.style "max-height" "90vh"
-                            , HA.style "width" "90vmin"
-                            , HA.style "height" "90vmin"
+                            [ HA.class "max-w-[90vw] max-h-[90vh] w-[90vmin] h-[90vmin]"
                             ]
                             [ Html.canvas
                                 [ HA.id "canvas"
@@ -321,7 +289,7 @@ view model =
                         Info.helpView
 
                       else
-                        Settings.viewEditSettings model.selectionState model.settings isMobile
+                        Settings.viewEditSettings model.selectionState model.settings
                     ]
                 ]
     }
