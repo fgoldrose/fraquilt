@@ -43,6 +43,11 @@ init3 =
     Array.fromList [ "#ffffff", "#808080", "#000000" ]
 
 
+init5 : InitialVariables
+init5 =
+    Array.fromList [ "#ffffff", "#000000", "#ff0000", "#00ff00", "#0000ff" ]
+
+
 encode : InitialVariables -> Encode.Value
 encode initialVariables =
     Encode.array

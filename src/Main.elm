@@ -303,12 +303,12 @@ init flags url key =
                             let
                                 ( permutations, seed ) =
                                     Random.step
-                                        (PermutationGrid.randomSymmetric 3)
+                                        (PermutationGrid.randomSymmetric 5)
                                         (Random.initialSeed flags.randomSeed)
                             in
                             { settings =
                                 { level = 9
-                                , initialVariables = Colors.init3
+                                , initialVariables = Colors.init5
                                 , permutations = permutations
                                 }
                             , randomSeed = seed
