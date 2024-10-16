@@ -89,7 +89,7 @@ view config permutation =
             List.range 0 (numVars - 1)
     in
     Html.div
-        ([ HA.style "background-color" "rgb(200, 200, 200)"
+        ([ HA.class "bg-neutral-300"
          , HA.style "border-radius" "6%"
          , HA.style "padding" (pxInt config.dotPixelSize ++ " 0")
          ]
@@ -159,14 +159,13 @@ dot { side, totalVars, config, disabled } index =
 
         rightModeStyles =
             if disabled then
-                [ HA.style "background-color" "black" ]
+                [ HA.class "bg-black" ]
 
             else
                 case permutationSelection of
                     Selected selectedIndex ->
                         if selectedIndex == index then
-                            [ HA.style "cursor" "pointer"
-                            , HA.style "background-color" "rgb(0, 0, 255)"
+                            [ HA.class "cursor-pointer bg-blue-700"
                             , HA.style "outline"
                                 (pxFloat (toFloat config.dotPixelSize / 10)
                                     ++ " solid rgba(0, 100, 255, 0.5)"
@@ -175,20 +174,17 @@ dot { side, totalVars, config, disabled } index =
                             ]
 
                         else
-                            [ HA.style "cursor" "pointer"
-                            , HA.style "background-color" "rgb(0, 100, 255)"
+                            [ HA.class "cursor-pointer bg-blue-600"
                             , HE.onClick (endSelection index)
                             ]
 
                     PromptSelection ->
-                        [ HA.style "cursor" "pointer"
-                        , HA.style "background-color" "rgb(0, 100, 255)"
+                        [ HA.class "cursor-pointer bg-blue-600"
                         , HE.onClick (startSelection index)
                         ]
 
                     DontPromptSelection ->
-                        [ HA.style "cursor" "pointer"
-                        , HA.style "background-color" "black"
+                        [ HA.class "cursor-pointer bg-black"
                         , HE.onClick (startSelection index)
                         ]
 
@@ -204,7 +200,7 @@ dot { side, totalVars, config, disabled } index =
                 )
 
         rightStyles =
-            [ HA.style "right" "0"
+            [ HA.class "right-0"
             , HA.style "transform" "translate(50%, -50%)"
             , dropShadow
             , HA.style "transition" "background-color 0.2s ease-in"
@@ -212,9 +208,8 @@ dot { side, totalVars, config, disabled } index =
                 ++ rightModeStyles
 
         leftStyles =
-            [ HA.style "left" "0"
+            [ HA.class "left-0 bg-black"
             , HA.style "transform" "translate(-50%, -50%)"
-            , HA.style "background-color" "black"
             , dropShadow
             , HA.style "transition" "background-color 0.2s ease-in"
             ]
