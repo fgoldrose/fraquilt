@@ -55,7 +55,7 @@ render settings =
 viewEditSettings : SelectionState -> Settings -> Html Msg
 viewEditSettings selectionState settings =
     Html.div
-        [ HA.class "h-full grow-[2] overflow-y-scroll bg-neutral-100 relative tall:w-full" ]
+        [ HA.class "h-full grow-[2] overflow-y-scroll bg-gray-100 relative tall:w-full text-gray-900" ]
         [ Html.div
             [ HA.class "absolute top-3 right-3" ]
             [ helpIcon ]
@@ -122,7 +122,7 @@ symmetryToggle symmetric =
         [ HA.class "inline-flex items-center cursor-pointer"
         ]
         [ Html.span
-            [ HA.class "me-3 text-sm font-medium text-gray-900 dark:text-gray-300"
+            [ HA.class "me-3 text-sm font-medium text-gray-900"
             ]
             [ Html.text "Symmetric" ]
         , Html.input
@@ -134,7 +134,7 @@ symmetryToggle symmetric =
             ]
             []
         , Html.div
-            [ HA.class "relative w-11 h-6 bg-gray-200 peer-focus-visible:outline-none peer-focus-visible:ring-4 peer-focus-visible:ring-blue-300 dark:peer-focus-visible:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"
+            [ HA.class "relative w-11 h-6 bg-gray-300 peer-focus-visible:outline-none peer-focus-visible:ring-4 peer-focus-visible:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-400 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"
             ]
             []
         ]

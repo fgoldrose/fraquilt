@@ -21,7 +21,7 @@ sectionWithName labelText elements =
         [ HA.class "flex flex-col items-center gap-2"
         ]
         (Html.span
-            [ HA.class "font-bold" ]
+            [ HA.class "font-semibold" ]
             [ Html.text labelText ]
             :: elements
         )

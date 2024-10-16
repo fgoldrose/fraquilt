@@ -89,7 +89,7 @@ view config permutation =
             List.range 0 (numVars - 1)
     in
     Html.div
-        ([ HA.class "bg-neutral-300"
+        ([ HA.class "bg-gray-300"
          , HA.style "border-radius" "6%"
          , HA.style "padding" (pxInt config.dotPixelSize ++ " 0")
          ]
