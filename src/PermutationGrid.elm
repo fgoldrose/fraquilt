@@ -5,6 +5,7 @@ import Html.Attributes as HA
 import Json.Encode as Encode
 import Permutation exposing (Permutation)
 import Random
+import Svg exposing (symbol)
 import Types exposing (Quadrant(..), SelectionState(..))
 import UI exposing (pxFloat, pxInt)
 
@@ -26,17 +27,37 @@ clear numVars =
     }
 
 
-endSelection : SelectionState -> Int -> PermutationGrid -> PermutationGrid
-endSelection selectionState endIndex settings =
+endSelection : SelectionState -> Int -> Bool -> PermutationGrid -> PermutationGrid
+endSelection selectionState endIndex symmetric settings =
     case selectionState of
         TLSelected startIndex ->
+            let
+                newPermutation =
+                    Permutation.swap startIndex endIndex settings.tl
+            in
             { settings
-                | tl = Permutation.swap startIndex endIndex settings.tl
+                | tl = newPermutation
+                , br =
+                    if symmetric then
+                        newPermutation
+
+                    else
+                        settings.br
             }
 
         TRSelected startIndex ->
+            let
+                newPermutation =
+                    Permutation.swap startIndex endIndex settings.tr
+            in
             { settings
-                | tr = Permutation.swap startIndex endIndex settings.tr
+                | tr = newPermutation
+                , bl =
+                    if symmetric then
+                        newPermutation
+
+                    else
+                        settings.bl
             }
 
         BLSelected startIndex ->
@@ -99,6 +120,7 @@ view :
     , cancelSelection : msg
     , selectionState : SelectionState
     , dotPixelSize : Int
+    , symmetric : Bool
     }
     -> PermutationGrid
     -> Html msg
@@ -110,6 +132,9 @@ view config settings =
             , endSelection = config.endSelection
             , cancelSelection = config.cancelSelection
             , dotPixelSize = config.dotPixelSize
+            , disabled =
+                config.symmetric
+                    && (quadrant == BottomLeft || quadrant == BottomRight)
             }
 
         permWidth =

@@ -10,7 +10,7 @@ type Msg
     = NoOp
     | OnUrlChange Url
     | OnUrlRequest Browser.UrlRequest
-    | Randomize { symmetric : Bool }
+    | Randomize
     | ClearPermutations
     | UpdateInitialVar Int String
     | ChangeLevel String
@@ -21,3 +21,4 @@ type Msg
     | TutorialMsg Tutorial.Msg
     | WindowChanged Int Int
     | MakeFullscreen
+    | SymmetryToggled Bool

@@ -6,6 +6,7 @@ import Dict exposing (Dict)
 import Permutation exposing (Permutation)
 import PermutationGrid exposing (PermutationGrid)
 import Url exposing (Url)
+import Url.Parser exposing (query)
 
 
 type Route
@@ -54,6 +55,7 @@ type alias UrlSettings =
     { level : Int
     , initialVariables : InitialVariables
     , permutations : PermutationGrid
+    , symmetric : Bool
     }
 
 
@@ -107,6 +109,14 @@ settingsToQueryParams settings =
         , ( "tr", [ Permutation.toUrlString settings.permutations.tr ] )
         , ( "bl", [ Permutation.toUrlString settings.permutations.bl ] )
         , ( "br", [ Permutation.toUrlString settings.permutations.br ] )
+        , ( "sym"
+          , [ if settings.symmetric then
+                "t"
+
+              else
+                "f"
+            ]
+          )
         , ( "v", [ "0" ] ) -- so I can potentially change the url format in the future
         ]
 
@@ -126,12 +136,21 @@ settingsFromQueryParams queryParameters =
                 (getPermutation "tr")
                 (getPermutation "bl")
                 (getPermutation "br")
+
+        symmetric =
+            case Dict.get "sym" queryParameters |> Maybe.andThen List.head of
+                Just "t" ->
+                    True
+
+                _ ->
+                    False
     in
     Maybe.map3
         (\level colors permutations ->
             { level = level
             , initialVariables = colors
             , permutations = permutations
+            , symmetric = symmetric
             }
         )
         (Dict.get "level" queryParameters |> Maybe.andThen List.head |> Maybe.andThen String.toInt)

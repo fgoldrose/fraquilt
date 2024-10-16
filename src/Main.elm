@@ -75,10 +75,10 @@ update msg ({ settings } as model) =
                     , Nav.load url
                     )
 
-        Randomize { symmetric } ->
+        Randomize ->
             let
                 randomFunction =
-                    if symmetric then
+                    if settings.symmetric then
                         PermutationGrid.randomSymmetric
 
                     else
@@ -227,6 +227,7 @@ update msg ({ settings } as model) =
                             PermutationGrid.endSelection
                                 model.selectionState
                                 endIndex
+                                settings.symmetric
                                 settings.permutations
                     }
             in
@@ -255,6 +256,26 @@ update msg ({ settings } as model) =
         MakeFullscreen ->
             ( model, makeFullscreen () )
 
+        SymmetryToggled nowSymmetric ->
+            let
+                newPermutations =
+                    if nowSymmetric then
+                        { tl = settings.permutations.tl
+                        , tr = settings.permutations.tr
+                        , bl = settings.permutations.tr
+                        , br = settings.permutations.tl
+                        }
+
+                    else
+                        settings.permutations
+
+                newSettings =
+                    { settings | symmetric = nowSymmetric, permutations = newPermutations }
+            in
+            ( { model | settings = newSettings }
+            , Settings.change model.key newSettings
+            )
+
 
 port makeFullscreen : () -> Cmd msg
 
@@ -279,7 +300,7 @@ view model =
                                 [ HA.id "canvas"
                                 , HA.class "cursor-pointer w-full h-full border-2 border-black"
                                 , HA.style "image-rendering" "pixelated"
-                                , HE.onClick (Randomize { symmetric = True })
+                                , HE.onClick Randomize
                                 ]
                                 []
                             ]
@@ -323,6 +344,7 @@ init flags url key =
                                 { level = 9
                                 , initialVariables = Colors.init5
                                 , permutations = permutations
+                                , symmetric = True
                                 }
                             , randomSeed = seed
                             }

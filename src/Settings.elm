@@ -26,6 +26,7 @@ type alias Settings =
     { level : Int
     , initialVariables : InitialVariables
     , permutations : PermutationGrid
+    , symmetric : Bool
     }
 
 
@@ -115,6 +116,30 @@ viewNumberOfVariables numVars =
         |> sectionWithName "Number of colors"
 
 
+symmetryToggle : Bool -> Html Msg
+symmetryToggle symmetric =
+    Html.label
+        [ HA.class "inline-flex items-center cursor-pointer"
+        ]
+        [ Html.span
+            [ HA.class "me-3 text-sm font-medium text-gray-900 dark:text-gray-300"
+            ]
+            [ Html.text "Symmetric" ]
+        , Html.input
+            [ HA.type_ "checkbox"
+            , HA.value ""
+            , HA.class "sr-only peer"
+            , HA.checked symmetric
+            , HE.onCheck SymmetryToggled
+            ]
+            []
+        , Html.div
+            [ HA.class "relative w-11 h-6 bg-gray-200 peer-focus-visible:outline-none peer-focus-visible:ring-4 peer-focus-visible:ring-blue-300 dark:peer-focus-visible:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"
+            ]
+            []
+        ]
+
+
 viewPermutationGrid : SelectionState -> Settings -> Html Msg
 viewPermutationGrid selectionState settings =
     [ PermutationGrid.view
@@ -123,6 +148,7 @@ viewPermutationGrid selectionState settings =
         , cancelSelection = CancelSelection
         , selectionState = selectionState
         , dotPixelSize = 20
+        , symmetric = settings.symmetric
         }
         settings.permutations
     , Html.div
@@ -130,19 +156,15 @@ viewPermutationGrid selectionState settings =
         ]
         [ Html.button
             [ HA.class "border border-black rounded-md px-2 hover:bg-neutral-200"
-            , HE.onClick <| Randomize { symmetric = False }
+            , HE.onClick <| Randomize
             ]
             [ Html.text "Random" ]
-        , Html.button
-            [ HA.class "border border-black rounded-md px-2 hover:bg-neutral-200"
-            , HE.onClick <| Randomize { symmetric = True }
-            ]
-            [ Html.text "Random Symmetric" ]
         , Html.button
             [ HA.class "border border-black rounded-md px-2 hover:bg-neutral-200"
             , HE.onClick ClearPermutations
             ]
             [ Html.text "Clear" ]
         ]
+    , symmetryToggle settings.symmetric
     ]
         |> sectionWithName "Permutations"

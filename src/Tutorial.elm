@@ -234,6 +234,7 @@ page2 { colors, permutation, selectedIndex, hasChangedPermutation } =
                 , endSelection = EndSelection
                 , cancelSelection = CancelSelection
                 , dotPixelSize = 20
+                , disabled = False
                 }
                 permutation
             , rightArrow
@@ -369,6 +370,7 @@ page3 { colors, permutations, selectionState, hasChangedPermutation, showProcess
                     , endSelection = EndSelection
                     , cancelSelection = CancelSelection
                     , dotPixelSize = 20
+                    , symmetric = False
                     }
                     permutations
                 , rightArrow
@@ -396,6 +398,7 @@ page3 { colors, permutations, selectionState, hasChangedPermutation, showProcess
                     , endSelection = \_ -> NoOp
                     , cancelSelection = NoOp
                     , dotPixelSize = 5
+                    , symmetric = False
                     }
                     permutations
                 , smallRightArrow
@@ -543,6 +546,7 @@ page4 { colors, permutations, selectionState } windowWidth =
                 , endSelection = EndSelection
                 , cancelSelection = CancelSelection
                 , dotPixelSize = 20
+                , symmetric = False
                 }
                 permutations
             , Html.div
@@ -700,7 +704,7 @@ update msg page =
                     ( Page3
                         { state
                             | permutations =
-                                PermutationGrid.endSelection state.selectionState index state.permutations
+                                PermutationGrid.endSelection state.selectionState index False state.permutations
                             , selectionState = NoneSelected
                             , hasChangedPermutation = True
                         }
@@ -711,7 +715,7 @@ update msg page =
                     ( Page4
                         { state
                             | permutations =
-                                PermutationGrid.endSelection state.selectionState index state.permutations
+                                PermutationGrid.endSelection state.selectionState index False state.permutations
                             , selectionState = NoneSelected
                         }
                     , Cmd.none

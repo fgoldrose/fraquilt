@@ -75,6 +75,7 @@ type alias Config msg =
     , endSelection : Int -> msg
     , cancelSelection : msg
     , dotPixelSize : Int
+    , disabled : Bool
     }
 
 
@@ -88,10 +89,19 @@ view config permutation =
             List.range 0 (numVars - 1)
     in
     Html.div
-        [ HA.style "background-color" "rgb(200, 200, 200)"
-        , HA.style "border-radius" "6%"
-        , HA.style "padding" (pxInt config.dotPixelSize ++ " 0")
-        ]
+        ([ HA.style "background-color" "rgb(200, 200, 200)"
+         , HA.style "border-radius" "6%"
+         , HA.style "padding" (pxInt config.dotPixelSize ++ " 0")
+         ]
+            ++ (if config.disabled then
+                    [ HA.class "opacity-50"
+                    , HA.title "Turn off symmetry to edit"
+                    ]
+
+                else
+                    []
+               )
+        )
         [ Html.div
             [ HA.style "position" "relative"
             , HA.style "width" (pxInt (config.dotPixelSize * 5))
@@ -103,6 +113,7 @@ view config permutation =
                         { side = Left
                         , totalVars = numVars
                         , config = config
+                        , disabled = config.disabled
                         }
                     )
                     listRange
@@ -111,6 +122,7 @@ view config permutation =
                         { side = Right
                         , totalVars = numVars
                         , config = config
+                        , disabled = config.disabled
                         }
                     )
                     listRange
@@ -136,42 +148,49 @@ dot :
     { side : Side
     , totalVars : Int
     , config : Config msg
+    , disabled : Bool
     }
     -> Int
     -> Html msg
-dot { side, totalVars, config } index =
+dot { side, totalVars, config, disabled } index =
     let
         { permutationSelection, startSelection, endSelection, cancelSelection } =
             config
 
-        ( rightModeStyles, leftModeStyles ) =
-            ( case permutationSelection of
-                Selected selectedIndex ->
-                    if selectedIndex == index then
-                        [ HA.style "background-color" "rgb(0, 0, 255)"
-                        , HA.style "outline"
-                            (pxFloat (toFloat config.dotPixelSize / 10)
-                                ++ " solid rgba(0, 100, 255, 0.5)"
-                            )
-                        , HE.onClick cancelSelection
+        rightModeStyles =
+            if disabled then
+                [ HA.style "background-color" "black" ]
+
+            else
+                case permutationSelection of
+                    Selected selectedIndex ->
+                        if selectedIndex == index then
+                            [ HA.style "cursor" "pointer"
+                            , HA.style "background-color" "rgb(0, 0, 255)"
+                            , HA.style "outline"
+                                (pxFloat (toFloat config.dotPixelSize / 10)
+                                    ++ " solid rgba(0, 100, 255, 0.5)"
+                                )
+                            , HE.onClick cancelSelection
+                            ]
+
+                        else
+                            [ HA.style "cursor" "pointer"
+                            , HA.style "background-color" "rgb(0, 100, 255)"
+                            , HE.onClick (endSelection index)
+                            ]
+
+                    PromptSelection ->
+                        [ HA.style "cursor" "pointer"
+                        , HA.style "background-color" "rgb(0, 100, 255)"
+                        , HE.onClick (startSelection index)
                         ]
 
-                    else
-                        [ HA.style "background-color" "rgb(0, 100, 255)"
-                        , HE.onClick (endSelection index)
+                    DontPromptSelection ->
+                        [ HA.style "cursor" "pointer"
+                        , HA.style "background-color" "black"
+                        , HE.onClick (startSelection index)
                         ]
-
-                PromptSelection ->
-                    [ HA.style "background-color" "rgb(0, 100, 255)"
-                    , HE.onClick (startSelection index)
-                    ]
-
-                DontPromptSelection ->
-                    [ HA.style "background-color" "black"
-                    , HE.onClick (startSelection index)
-                    ]
-            , [ HA.style "background-color" "black" ]
-            )
 
         dropShadow =
             HA.style "filter"
@@ -187,7 +206,6 @@ dot { side, totalVars, config } index =
         rightStyles =
             [ HA.style "right" "0"
             , HA.style "transform" "translate(50%, -50%)"
-            , HA.style "cursor" "pointer"
             , dropShadow
             , HA.style "transition" "background-color 0.2s ease-in"
             ]
@@ -196,10 +214,10 @@ dot { side, totalVars, config } index =
         leftStyles =
             [ HA.style "left" "0"
             , HA.style "transform" "translate(-50%, -50%)"
+            , HA.style "background-color" "black"
             , dropShadow
             , HA.style "transition" "background-color 0.2s ease-in"
             ]
-                ++ leftModeStyles
     in
     Html.div
         ([ HA.style "width" (pxInt config.dotPixelSize)
