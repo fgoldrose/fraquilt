@@ -1,10 +1,11 @@
-module Main exposing (..)
+port module Main exposing (..)
 
 import Browser
 import Browser.Dom
 import Browser.Events
 import Browser.Navigation as Nav
 import Colors
+import FeatherIcons
 import Html
 import Html.Attributes as HA
 import Html.Events as HE
@@ -251,6 +252,12 @@ update msg ({ settings } as model) =
         WindowChanged width height ->
             ( { model | window = { width = width, height = height } }, Cmd.none )
 
+        MakeFullscreen ->
+            ( model, makeFullscreen () )
+
+
+port makeFullscreen : () -> Cmd msg
+
 
 view : Model -> Browser.Document Msg
 view model =
@@ -264,19 +271,25 @@ view model =
                 [ Html.div
                     [ HA.class "flex items-center h-screen w-screen font-sans overflow-auto justify-between flex-wrap tall:flex-nowrap tall:justify-normal tall:flex-col tall:overflow-hidden" ]
                     [ Html.div
-                        [ HA.class "cursor-pointer m-3 flex items-center justify-center grow" ]
+                        [ HA.class "m-3 flex items-center justify-center grow flex-wrap" ]
                         [ Html.div
                             [ HA.class "max-w-[90vw] max-h-[90vh] w-[90vmin] h-[90vmin]"
                             ]
                             [ Html.canvas
                                 [ HA.id "canvas"
-                                , HA.style "width" "100%"
-                                , HA.style "height" "100%"
+                                , HA.class "cursor-pointer w-full h-full border-2 border-black"
                                 , HA.style "image-rendering" "pixelated"
-                                , HA.style "border" "2px solid black"
                                 , HE.onClick (Randomize { symmetric = True })
                                 ]
                                 []
+                            ]
+                        , Html.button
+                            [ HE.onClick MakeFullscreen
+                            , HA.class "self-end mx-6 mt-3"
+                            ]
+                            [ FeatherIcons.maximize2
+                                |> FeatherIcons.withSize 20
+                                |> FeatherIcons.toHtml []
                             ]
                         ]
                     , Settings.viewEditSettings model.selectionState model.settings

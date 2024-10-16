@@ -16,6 +16,9 @@ export type Ports = {
                 br: number[]
             };
         }) => void) => void
+    },
+    readonly makeFullscreen: {
+        subscribe: (callback: (args: {}) => void) => void
     }
 }
 

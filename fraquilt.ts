@@ -20,6 +20,12 @@ const app = Elm.Main.init({
         }
     }
 });
+app.ports.makeFullscreen.subscribe(() => {
+    const canvas = <HTMLCanvasElement | null>document.getElementById("canvas");
+    if (canvas) {
+        canvas.requestFullscreen();
+    }
+})
 app.ports.renderImage.subscribe(({ permutations, level, initialVariables }) => {
     const initialVarsColors = initialVariables.map(hexToRgb);
     generateImage(permutations, level, initialVarsColors);

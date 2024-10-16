@@ -20,3 +20,4 @@ type Msg
     | CancelSelection
     | TutorialMsg Tutorial.Msg
     | WindowChanged Int Int
+    | MakeFullscreen
